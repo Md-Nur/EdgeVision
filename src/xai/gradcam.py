@@ -100,7 +100,12 @@ class GradCAM:
         cam_resized = np.array(Image.fromarray(cam).resize((w, h), Image.BILINEAR))
 
         # Colorize
-        cmap = cm.get_cmap(colormap)
+        try:
+            import matplotlib as mpl
+            cmap = mpl.colormaps[colormap]
+        except (AttributeError, KeyError):
+            import matplotlib.pyplot as plt
+            cmap = plt.get_cmap(colormap)
         heatmap = cmap(cam_resized)[:, :, :3]  # Drop alpha channel
         heatmap = np.uint8(255 * heatmap)
 

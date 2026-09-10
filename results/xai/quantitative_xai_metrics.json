@@ -1,0 +1,7 @@
+{
+  "mean_energy_concentration": 0.7190127754374557,
+  "std_energy_concentration": 0.27362774944268986,
+  "pointing_game_accuracy": 0.9333333333333333,
+  "method": "Grad-CAM++",
+  "total_samples_analyzed": 15
+}

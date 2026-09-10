@@ -1,0 +1,16 @@
+energy_concentration,pointing_game_hit,class_name,image_path,sample_idx
+0.738746304861303,1.0,Papaya_Anthracnose,data/MyDataset/Papaya/Anthracnose/image_104_aug_1.jpg,0
+0.4888705998651362,1.0,Papaya_BacterialSpot,data/MyDataset/Papaya/BacterialSpot/image_127_aug_1.jpg,0
+0.573487122700787,1.0,Papaya_Curl,data/MyDataset/Papaya/Curl/image_101_aug_1.jpg,0
+0.720772833132101,1.0,Papaya_Healthy,data/MyDataset/Papaya/Healthy/image_100_aug_1.jpg,0
+0.8001691018321087,1.0,Papaya_Mealybug,data/MyDataset/Papaya/Mealybug/image_111_aug_1.jpg,0
+0.36347687584885013,1.0,Papaya_Mite disease,data/MyDataset/Papaya/Mite disease/image_116_aug_1.jpg,0
+0.08858185915243849,0.0,Papaya_Mosaic,data/MyDataset/Papaya/Mosaic/image_102_aug_1.jpg,0
+0.3789859338586299,1.0,Papaya_Ringspot,data/MyDataset/Papaya/Ringspot/image_101_aug_1.jpg,0
+0.8547922451798708,1.0,Potato_Potato Early blight,data/MyDataset/Potato/Potato Early blight/PotatoEarlyBlight(1001).JPG,0
+0.8126609751686952,1.0,Potato_Potato Healthy,data/MyDataset/Potato/Potato Healthy/PotatoHealthy(1000).JPG,0
+0.9994453887330816,1.0,Potato_Potato Late blight,data/MyDataset/Potato/Potato Late blight/PotatoLateBlight(1002).JPG,0
+0.9979135990226841,1.0,Rice_Bacterial Leaf Blight,data/MyDataset/Rice/Bacterial Leaf Blight/306374173_668849494858593_3766180290570057808_n.jpg,0
+0.9867815109595711,1.0,Rice_Brown Spot,data/MyDataset/Rice/Brown Spot/308278744_606334647906871_7109375032890807056_n.jpg,0
+0.9874666470569515,1.0,Rice_Healthy Leaf,data/MyDataset/Rice/Healthy Leaf/IMG20231027083123_01.jpg,0
+0.9930406341896262,1.0,Rice_Tungro Virus,data/MyDataset/Rice/Tungro Virus/20231027_083032.jpg,0
