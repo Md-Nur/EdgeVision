@@ -1,0 +1,35 @@
+data:
+  csv_path: "data/dataset.csv"
+  image_root: "data"
+  splits_dir: "data/splits"
+  train_split: 0.70
+  val_split: 0.15
+  test_split: 0.15
+  random_state: 42
+  num_classes: 15
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+
+model:
+  backbone: "efficientnet_b0"
+  pretrained: true
+  dropout: 0.3
+
+training:
+  device: "auto"
+  seed: 42
+  loss_type: "weighted_ce"  # 'weighted_ce', 'focal', 'ce'
+  focal_gamma: 2.0
+  label_smoothing: 0.1
+  phase1_epochs: 3
+  phase1_lr: 0.001
+  phase2_epochs: 15
+  phase2_backbone_lr: 0.00002
+  phase2_head_lr: 0.0002
+  weight_decay: 0.01
+  early_stopping_patience: 5
+
+outputs:
+  models_dir: "models"
+  results_dir: "results"
