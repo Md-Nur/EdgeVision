@@ -136,6 +136,8 @@ Mukti/
 │   ├── 02_train.py               # Two-phase training entry point
 │   ├── 03_evaluate.py            # Test set evaluation & confusion matrix generator
 │   └── 04_generate_xai.py        # Heatmap generation and quantitative XAI evaluation
+├── notebooks/
+│   └── explainable_ai_leaf_disease.ipynb # Interactive Explainable AI (XAI) walkthrough notebook
 ├── tests/
 │   ├── test_splits.py            # Unit tests verifying zero base ID leakage
 │   └── test_pipeline.py          # Unit tests for models, loss functions, and XAI
