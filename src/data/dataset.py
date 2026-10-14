@@ -145,6 +145,8 @@ class CropDiseaseDataset(Dataset):
         crop_map = {"Papaya": 0, "Potato": 1, "Rice": 2}
         crop_label = crop_map.get(crop_name, label // 4)
 
+        group_id = row["group_id"] if "group_id" in row else idx
+
         return {
             "image": image_tensor,
             "label": torch.tensor(label, dtype=torch.long),
@@ -152,6 +154,7 @@ class CropDiseaseDataset(Dataset):
             "class_name": class_name,
             "crop": crop_name,
             "image_path": str(full_path),
+            "group_id": group_id,
         }
 
 

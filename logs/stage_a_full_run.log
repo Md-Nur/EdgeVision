@@ -1,0 +1,23 @@
+================================================================================
+ Mukti Stage A: Model Training & Evaluation Orchestrator
+================================================================================
+ Project Root : /Users/md.nurealamsiddiquee/Projects/Mukti
+ Python Bin   : /Users/md.nurealamsiddiquee/Projects/Mukti/.venv/bin/python
+ Arguments    : --force
+================================================================================
+================================================================================
+STAGE A: MULTI-CROP LEAF DISEASE DIAGNOSIS ORCHESTRATOR
+Seed: 42 | Device: mps | Dry Run: False | Batch Size: 64
+Results: results | Checkpoints: checkpoints | Logs: logs
+================================================================================
+Classes (12): ['Papaya___Anthracnose', 'Papaya___Healthy', 'Papaya___Leaf_Curl', 'Papaya___Ringspot', 'Potato___Early_Blight', 'Potato___Healthy', 'Potato___Late_Blight', 'Potato___Leafroll_Virus', 'Rice___Bacterial_Leaf_Blight', 'Rice___Brown_Spot', 'Rice___Healthy', 'Rice___Tungro']
+Data Splits -> Train: 15,611 | Val: 3,291 | Std Test: 3,256 | Dedup Test: 2,864
+
+================================================================================
+RUNNING PRETRAINED: resnet18 (resnet18) | Run ID: resnet18_seed42
+Device: mps | Dry Run: False | Batch Size: 64
+Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
+================================================================================
+
+--- Phase 1: Head Only Training (3 epochs, lr=1e-3) ---
+[P1 Ep 1/3 (Total Ep 1)] Train Loss: 2.0054 | Val Loss: 2.0664 | Val Acc: 0.8681 | Val Macro-F1: 0.7933 [BEST]
