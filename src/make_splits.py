@@ -498,6 +498,115 @@ def make_group_stratified_splits(
     return train_df, val_df, test_df
 
 
+def deduplicate_split_by_md5(
+    split_df: pd.DataFrame,
+    cache_df: Optional[pd.DataFrame] = None,
+) -> pd.DataFrame:
+    """
+    Keep exactly one image per exact-MD5 duplicate within the split.
+    Preserves all standard output columns.
+    """
+    df = split_df.copy()
+    if "md5" not in df.columns:
+        if cache_df is not None:
+            md5_map = dict(zip(cache_df["image_path"], cache_df["md5"]))
+            df["md5"] = df["image_path"].map(md5_map)
+        else:
+            raise KeyError("MD5 column missing and cache_df not provided for deduplication.")
+
+    dedup_df = df.drop_duplicates(subset=["md5"], keep="first").copy()
+    output_cols = [c for c in ["image_path", "crop", "disease", "class_name", "label", "group_id"] if c in dedup_df.columns]
+    return dedup_df[output_cols].reset_index(drop=True)
+
+
+def make_stratified_group_kfold_splits(
+    clean_df: pd.DataFrame,
+    n_splits: int = 5,
+    seed: int = 42,
+    dedup_md5: bool = False,
+    cache_df: Optional[pd.DataFrame] = None,
+    output_dir: str | Path = "splits",
+) -> List[Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]]:
+    """
+    Generate n_splits StratifiedGroupKFold splits with zero group overlap:
+    For each fold k:
+      - Test: fold k
+      - Val: fold (k + 1) % n_splits
+      - Train: remaining n_splits - 2 folds
+    Optionally deduplicates exact-MD5 duplicates within each split if dedup_md5=True.
+    Saves splits to {output_dir}/fold{k}_train.csv, fold{k}_val.csv, fold{k}_test.csv.
+    """
+    from sklearn.model_selection import StratifiedGroupKFold
+
+    sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=seed)
+
+    # Assign fold indices
+    fold_assignments = np.zeros(len(clean_df), dtype=np.int64)
+    for fold_idx, (_, test_indices) in enumerate(
+        sgkf.split(clean_df, clean_df["class_name"], groups=clean_df["group_id"])
+    ):
+        fold_assignments[test_indices] = fold_idx
+
+    clean_df = clean_df.copy()
+    clean_df["fold"] = fold_assignments
+
+    out_path = Path(output_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    output_cols = ["image_path", "crop", "disease", "class_name", "label", "group_id"]
+    folds = []
+
+    print("\n" + "=" * 90)
+    print(f"5-FOLD STRATIFIED GROUP K-FOLD SPLITS ({n_splits} folds, Seed {seed}, MD5 Dedup={dedup_md5})")
+    print("=" * 90)
+
+    for k in range(n_splits):
+        test_mask = clean_df["fold"] == k
+        val_mask = clean_df["fold"] == (k + 1) % n_splits
+        train_mask = ~(test_mask | val_mask)
+
+        tr_df = clean_df[train_mask].copy()
+        va_df = clean_df[val_mask].copy()
+        te_df = clean_df[test_mask].copy()
+
+        if dedup_md5:
+            tr_df = deduplicate_split_by_md5(tr_df, cache_df)
+            va_df = deduplicate_split_by_md5(va_df, cache_df)
+            te_df = deduplicate_split_by_md5(te_df, cache_df)
+        else:
+            tr_df = tr_df[output_cols].reset_index(drop=True)
+            va_df = va_df[output_cols].reset_index(drop=True)
+            te_df = te_df[output_cols].reset_index(drop=True)
+
+        # Verification of zero group_id leakage
+        tr_g = set(tr_df["group_id"])
+        va_g = set(va_df["group_id"])
+        te_g = set(te_df["group_id"])
+
+        assert len(tr_g & va_g) == 0, f"Fold {k}: Train-Val group overlap!"
+        assert len(tr_g & te_g) == 0, f"Fold {k}: Train-Test group overlap!"
+        assert len(va_g & te_g) == 0, f"Fold {k}: Val-Test group overlap!"
+
+        tr_csv = out_path / f"fold{k}_train.csv"
+        va_csv = out_path / f"fold{k}_val.csv"
+        te_csv = out_path / f"fold{k}_test.csv"
+
+        tr_df[output_cols].to_csv(tr_csv, index=False)
+        va_df[output_cols].to_csv(va_csv, index=False)
+        te_df[output_cols].to_csv(te_csv, index=False)
+
+        tot = len(tr_df) + len(va_df) + len(te_df)
+        print(f"Fold {k}: Train={len(tr_df):>5,} ({len(tr_g):>4,} grp) | "
+              f"Val={len(va_df):>5,} ({len(va_g):>4,} grp) | "
+              f"Test={len(te_df):>5,} ({len(te_g):>4,} grp) | Total={tot:>5,}")
+        print(f"   Written to: {tr_csv.name}, {va_csv.name}, {te_csv.name}")
+
+        folds.append((tr_df, va_df, te_df))
+
+    print("=" * 90 + "\n")
+    return folds
+
+
 def save_splits(
     train_df: pd.DataFrame,
     val_df: pd.DataFrame,
@@ -610,7 +719,10 @@ def run_pipeline(
     test_ratio: float = 0.15,
     seed: int = 42,
     max_phash_dist: int = 4,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    dedup_md5: bool = False,
+    kfold: bool = False,
+    n_splits: int = 5,
+) -> Any:
     """Execute complete end-to-end dataset preparation and splitting pipeline."""
     print(f"1. Scanning dataset and loading hashes from: {data_dir} (cache: {cache_csv})...")
     df = scan_and_compute_hashes(data_dir=data_dir, cache_csv=cache_csv)
@@ -642,7 +754,19 @@ def run_pipeline(
     num_groups = clean_df["group_id"].nunique()
     print(f"   Constructed {num_groups:,} connected components in {time.time()-t1:.2f}s.")
 
-    print(f"\n5. Generating group-stratified splits ({train_ratio:.0%}/{val_ratio:.0%}/{test_ratio:.0%}, seed={seed})...")
+    if kfold:
+        print(f"\n5. Generating {n_splits}-fold StratifiedGroupKFold splits (seed={seed}, dedup_md5={dedup_md5})...")
+        folds = make_stratified_group_kfold_splits(
+            clean_df=clean_df,
+            n_splits=n_splits,
+            seed=seed,
+            dedup_md5=dedup_md5,
+            cache_df=df,
+            output_dir=output_dir,
+        )
+        return folds
+
+    print(f"\n5. Generating group-stratified splits ({train_ratio:.0%}/{val_ratio:.0%}/{test_ratio:.0%}, seed={seed}, dedup_md5={dedup_md5})...")
     train_df, val_df, test_df = make_group_stratified_splits(
         df=clean_df,
         train_ratio=train_ratio,
@@ -650,6 +774,12 @@ def run_pipeline(
         test_ratio=test_ratio,
         seed=seed,
     )
+
+    if dedup_md5:
+        print("   Applying exact-MD5 deduplication within each split...")
+        train_df = deduplicate_split_by_md5(train_df, cache_df=df)
+        val_df = deduplicate_split_by_md5(val_df, cache_df=df)
+        test_df = deduplicate_split_by_md5(test_df, cache_df=df)
 
     save_splits(train_df, val_df, test_df, output_dir=output_dir)
     print_split_summary(train_df, val_df, test_df)
@@ -709,6 +839,24 @@ def main():
         default=42,
         help="Random seed for reproducibility (default: 42)",
     )
+    parser.add_argument(
+        "--dedup-md5",
+        action="store_true",
+        default=False,
+        help="Keep one image per exact-MD5 duplicate within each split (default: False)",
+    )
+    parser.add_argument(
+        "--kfold",
+        action="store_true",
+        default=False,
+        help="Generate 5-fold StratifiedGroupKFold splits (fold{0..4}_{train,val,test}.csv) with no group overlap (default: False)",
+    )
+    parser.add_argument(
+        "--n-splits",
+        type=int,
+        default=5,
+        help="Number of folds for StratifiedGroupKFold mode (default: 5)",
+    )
     args = parser.parse_args()
 
     run_pipeline(
@@ -720,8 +868,12 @@ def main():
         val_ratio=args.val_ratio,
         test_ratio=args.test_ratio,
         seed=args.seed,
+        dedup_md5=args.dedup_md5,
+        kfold=args.kfold,
+        n_splits=args.n_splits,
     )
 
 
 if __name__ == "__main__":
     main()
+

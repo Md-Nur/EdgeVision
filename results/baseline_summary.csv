@@ -1,0 +1,2 @@
+model,num_seeds,macro_f1_mean,macro_f1_std,accuracy_mean,accuracy_std,parameter_count,model_size_mb,gflops,cpu_latency_ms
+resnet18,1,0.0867,0.0,0.1,0.0,11182668,42.66,3.627,12.46

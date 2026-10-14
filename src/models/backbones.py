@@ -137,16 +137,37 @@ class CropDiseaseClassifier(nn.Module):
         return param_groups
 
 
+MODEL_ALIASES = {
+    "resnet18": "resnet18",
+    "mobilenetv3_small": "mobilenetv3_small_100",
+    "mobilenetv3-small": "mobilenetv3_small_100",
+    "mobilenetv3_small_100": "mobilenetv3_small_100",
+    "mobilenetv3_large": "mobilenetv3_large_100",
+    "mobilenetv3-large": "mobilenetv3_large_100",
+    "mobilenetv3_large_100": "mobilenetv3_large_100",
+    "efficientnet_b0": "efficientnet_b0",
+    "efficientnet-b0": "efficientnet_b0",
+}
+
+
+def normalize_model_name(name: str) -> str:
+    """Normalize model string to canonical timm architecture name."""
+    clean = name.lower().replace("-", "_").strip()
+    return MODEL_ALIASES.get(clean, clean)
+
+
 def create_model(
     backbone_name: str = "efficientnet_b0",
-    num_classes: int = 15,
+    num_classes: int = 12,
     pretrained: bool = True,
     dropout: float = 0.3,
 ) -> CropDiseaseClassifier:
-    """Factory function for model creation."""
+    """Factory function for model creation with canonical architecture resolution."""
+    canonical_name = normalize_model_name(backbone_name)
     return CropDiseaseClassifier(
-        backbone_name=backbone_name,
+        backbone_name=canonical_name,
         num_classes=num_classes,
         pretrained=pretrained,
         dropout=dropout,
     )
+

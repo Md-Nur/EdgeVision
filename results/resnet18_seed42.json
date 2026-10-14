@@ -1,0 +1,263 @@
+{
+  "model": "resnet18",
+  "seed": 42,
+  "macro_f1": 0.0867,
+  "accuracy": 0.1,
+  "weighted_f1": 0.0867,
+  "per_class": {
+    "Papaya___Anthracnose": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 5
+    },
+    "Papaya___Healthy": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 5
+    },
+    "Papaya___Leaf_Curl": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 5
+    },
+    "Papaya___Ringspot": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 5
+    },
+    "Potato___Early_Blight": {
+      "precision": 0.5,
+      "recall": 0.2,
+      "f1": 0.2857,
+      "support": 5
+    },
+    "Potato___Healthy": {
+      "precision": 1.0,
+      "recall": 0.2,
+      "f1": 0.3333,
+      "support": 5
+    },
+    "Potato___Late_Blight": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 5
+    },
+    "Potato___Leafroll_Virus": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 5
+    },
+    "Rice___Bacterial_Leaf_Blight": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 5
+    },
+    "Rice___Brown_Spot": {
+      "precision": 0.1,
+      "recall": 0.6,
+      "f1": 0.1714,
+      "support": 5
+    },
+    "Rice___Healthy": {
+      "precision": 0.3333,
+      "recall": 0.2,
+      "f1": 0.25,
+      "support": 5
+    },
+    "Rice___Tungro": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 5
+    }
+  },
+  "confusion_matrix": [
+    [
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5,
+      0,
+      0
+    ],
+    [
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      2,
+      0,
+      0,
+      2,
+      0,
+      0
+    ],
+    [
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      2,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      2,
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      2,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      3,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      2,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      5,
+      0,
+      0
+    ]
+  ],
+  "parameter_count": 11182668,
+  "trainable_parameters": 6156,
+  "model_size_mb": 42.66,
+  "flops": 3627134976,
+  "gflops": 3.627,
+  "cpu_latency_ms": 12.46,
+  "cpu_latency_std_ms": 0.35,
+  "best_val_macro_f1": 0.1058,
+  "phase1_epochs": 1,
+  "phase2_epochs_completed": 0,
+  "loss_type": "weighted_ce",
+  "label_smoothing": 0.1
+}

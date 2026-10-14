@@ -8,26 +8,88 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
 
-def get_transforms(image_size: int = 224) -> Dict[str, transforms.Compose]:
-    """Return standard training, validation, and test transforms."""
+def get_transforms(image_size: int = 224, resize_dim: int = 256) -> Dict[str, transforms.Compose]:
+    """
+    Standard transforms following requirements:
+    Resize preserving aspect ratio then center-crop to 224, flip, rotation 15, color jitter.
+    No other tricks yet.
+    """
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
+        std=[0.229, 0.224, 0.225],
     )
 
     train_transform = transforms.Compose([
-        transforms.Resize((image_size + 32, image_size + 32)),
-        transforms.RandomCrop(image_size),
+        transforms.Resize(resize_dim),
+        transforms.CenterCrop(image_size),
         transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomVerticalFlip(p=0.2),
         transforms.RandomRotation(degrees=15),
-        transforms.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.1),
+        transforms.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.1, hue=0.05),
         transforms.ToTensor(),
         normalize,
     ])
 
     eval_transform = transforms.Compose([
-        transforms.Resize((image_size, image_size)),
+        transforms.Resize(resize_dim),
+        transforms.CenterCrop(image_size),
+        transforms.ToTensor(),
+        normalize,
+    ])
+
+    return {
+        "train": train_transform,
+        "val": eval_transform,
+        "test": eval_transform,
+    }
+
+
+
+class RandomShadow:
+    """Random shadow augmentation simulating outdoor lighting variations."""
+
+    def __init__(self, p: float = 0.3):
+        self.p = p
+
+    def __call__(self, img: Image.Image) -> Image.Image:
+        import random
+        import numpy as np
+        if random.random() > self.p:
+            return img
+        w, h = img.size
+        shadow_factor = random.uniform(0.5, 0.8)
+        arr = np.array(img).astype(np.float32)
+        mask = np.linspace(1.0, shadow_factor, w).reshape(1, w, 1)
+        if random.random() > 0.5:
+            mask = np.flip(mask, axis=1)
+        arr = np.clip(arr * mask, 0, 255).astype(np.uint8)
+        return Image.fromarray(arr)
+
+
+def get_strong_transforms(image_size: int = 224) -> Dict[str, transforms.Compose]:
+    """
+    Stronger augmentation pipeline for training from scratch:
+    RandomResizedCrop, RandomHorizontalFlip, RandomRotation, ColorJitter,
+    GaussianBlur, and RandomShadow.
+    """
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225],
+    )
+
+    train_transform = transforms.Compose([
+        RandomShadow(p=0.3),
+        transforms.RandomResizedCrop(image_size, scale=(0.7, 1.0)),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomRotation(degrees=15),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.15, hue=0.05),
+        transforms.RandomApply([transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.1, 2.0))], p=0.3),
+        transforms.ToTensor(),
+        normalize,
+    ])
+
+    eval_transform = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(image_size),
         transforms.ToTensor(),
         normalize,
     ])
@@ -78,12 +140,20 @@ class CropDiseaseDataset(Dataset):
         label = int(row["label"])
         class_name = row["class_name"]
 
+        # Crop mapping: Papaya=0, Potato=1, Rice=2
+        crop_name = row["crop"] if "crop" in row else class_name.split("___")[0]
+        crop_map = {"Papaya": 0, "Potato": 1, "Rice": 2}
+        crop_label = crop_map.get(crop_name, label // 4)
+
         return {
             "image": image_tensor,
             "label": torch.tensor(label, dtype=torch.long),
+            "crop_label": torch.tensor(crop_label, dtype=torch.long),
             "class_name": class_name,
+            "crop": crop_name,
             "image_path": str(full_path),
         }
+
 
 
 def get_dataloaders(

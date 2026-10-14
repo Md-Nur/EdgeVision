@@ -272,6 +272,152 @@ def test_splits_per_class_and_per_crop_counts_and_threshold(capsys=None):
     assert len(below_30) == 0, f"Classes with < 30 test images: {below_30}"
 
 
+def _verify_split_leakage_and_integrity(
+    train_df: pd.DataFrame,
+    val_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+    split_label: str = "Split",
+    check_dedup_md5: bool = False,
+):
+    hashes_csv = Path("data/metadata_hashes.csv")
+    assert hashes_csv.exists(), f"Missing {hashes_csv}"
+    hashes_df = pd.read_csv(hashes_csv).set_index("image_path")
+
+    conflicts_csv = Path("reports/cross_class_conflicts.csv")
+    assert conflicts_csv.exists(), f"Missing {conflicts_csv}"
+    conflicts_df = pd.read_csv(conflicts_csv)
+    excluded_paths = set(conflicts_df["image1_path"]).union(set(conflicts_df["image2_path"]))
+
+    # 1. Expected columns
+    expected_cols = ["image_path", "crop", "disease", "class_name", "label", "group_id"]
+    for name, df in [("train", train_df), ("val", val_df), ("test", test_df)]:
+        assert list(df.columns) == expected_cols, f"{split_label} {name} columns mismatch: {list(df.columns)}"
+
+    # 2. Excluded cross-class conflicts absent from all splits
+    all_split_paths = set(train_df["image_path"]).union(set(val_df["image_path"])).union(set(test_df["image_path"]))
+    leaked_conflicts = excluded_paths & all_split_paths
+    assert len(leaked_conflicts) == 0, f"{split_label}: {len(leaked_conflicts)} cross-class conflict images leaked!"
+
+    # 3. Zero group_id overlap
+    tr_g = set(train_df["group_id"])
+    va_g = set(val_df["group_id"])
+    te_g = set(test_df["group_id"])
+    assert len(tr_g & va_g) == 0, f"{split_label}: Train-Val group overlap: {len(tr_g & va_g)}"
+    assert len(tr_g & te_g) == 0, f"{split_label}: Train-Test group overlap: {len(tr_g & te_g)}"
+    assert len(va_g & te_g) == 0, f"{split_label}: Val-Test group overlap: {len(va_g & te_g)}"
+
+    # 4. Zero pHash <= 4 near-duplicate leakage
+    split_map = {}
+    for p in train_df["image_path"]:
+        split_map[p] = "train"
+    for p in val_df["image_path"]:
+        split_map[p] = "val"
+    for p in test_df["image_path"]:
+        split_map[p] = "test"
+
+    split_paths = list(split_map.keys())
+    split_hashes = [hashes_df.loc[p, "phash_int"] for p in split_paths]
+    matching_pairs = find_phash_matches_bucketing(split_hashes, max_distance=4)
+
+    crossing_pairs = []
+    for idx1, idx2, dist in matching_pairs:
+        p1 = split_paths[idx1]
+        p2 = split_paths[idx2]
+        if split_map[p1] != split_map[p2]:
+            crossing_pairs.append((p1, p2, split_map[p1], split_map[p2], dist))
+    assert len(crossing_pairs) == 0, f"{split_label}: {len(crossing_pairs)} near-duplicate pairs crossing splits!"
+
+    # 5. Check exact MD5 deduplication if requested
+    if check_dedup_md5:
+        for sname, sdf in [("train", train_df), ("val", val_df), ("test", test_df)]:
+            md5s = [hashes_df.loc[p, "md5"] for p in sdf["image_path"]]
+            assert len(md5s) == len(set(md5s)), f"{split_label} {sname} contains duplicate MD5s!"
+
+    # 6. Minimum class test count >= 30
+    all_classes = sorted(set(train_df["class_name"]).union(val_df["class_name"]).union(test_df["class_name"]))
+    assert len(all_classes) == 12, f"{split_label}: Missing classes, found {len(all_classes)}"
+    min_test = min(len(test_df[test_df["class_name"] == c]) for c in all_classes)
+    assert min_test >= 30, f"{split_label}: Class drops below 30 test images: {min_test}"
+
+
+def test_kfold_splits_all_folds_no_leakage(capsys=None):
+    """
+    Leakage tests for Mode (b): 5-fold StratifiedGroupKFold splits (splits/fold0..4_{train,val,test}.csv).
+    Verifies that for EVERY fold:
+    1. Zero group_id overlap between train, val, and test.
+    2. Zero perceptual near-duplicates (pHash <= 4) cross splits.
+    3. Zero cross-class conflicting images leak into any fold.
+    4. All 12 classes are represented with >= 30 test images.
+    """
+    splits_dir = Path("splits")
+    print("\n" + "=" * 90)
+    print("LEAKAGE TEST SUITE: 5-FOLD STRATIFIED GROUP K-FOLD MODE (Folds 0..4)")
+    print("=" * 90)
+
+    for k in range(5):
+        tr_csv = splits_dir / f"fold{k}_train.csv"
+        va_csv = splits_dir / f"fold{k}_val.csv"
+        te_csv = splits_dir / f"fold{k}_test.csv"
+
+        assert tr_csv.exists() and va_csv.exists() and te_csv.exists(), f"Missing split CSVs for Fold {k}"
+
+        tr_df = pd.read_csv(tr_csv)
+        va_df = pd.read_csv(va_csv)
+        te_df = pd.read_csv(te_csv)
+
+        _verify_split_leakage_and_integrity(
+            tr_df, va_df, te_df, split_label=f"Fold {k}"
+        )
+
+        min_te = min(len(te_df[te_df["class_name"] == c]) for c in te_df["class_name"].unique())
+        print(f"[PASS] Fold {k}: Train={len(tr_df):>5,} ({tr_df['group_id'].nunique():>4,} grp) | "
+              f"Val={len(va_df):>5,} ({va_df['group_id'].nunique():>4,} grp) | "
+              f"Test={len(te_df):>5,} ({te_df['group_id'].nunique():>4,} grp) | "
+              f"Min test class count={min_te} | Leakage: ZERO (Groups=0, pHash<=4=0, Conflicts=0)")
+
+    print("=" * 90 + "\n")
+
+
+def test_md5_deduplicated_mode_no_leakage(capsys=None):
+    """
+    Leakage tests for Mode (a): Exact-MD5 deduplicated splits (splits/dedup/{train,val,test}.csv).
+    Verifies that:
+    1. Exactly one image per exact-MD5 duplicate is kept within each split (0 duplicate MD5s).
+    2. Zero group_id overlap between train, val, and test.
+    3. Zero perceptual near-duplicates (pHash <= 4) cross splits.
+    4. Zero cross-class conflicting images leak into any split.
+    5. All 12 classes are represented with >= 30 test images.
+    """
+    dedup_dir = Path("splits/dedup")
+    tr_csv = dedup_dir / "train.csv"
+    va_csv = dedup_dir / "val.csv"
+    te_csv = dedup_dir / "test.csv"
+
+    # If not yet generated on disk, generate in memory from clean dataset
+    if not (tr_csv.exists() and va_csv.exists() and te_csv.exists()):
+        from src.make_splits import run_pipeline
+        tr_df, va_df, te_df = run_pipeline(output_dir=dedup_dir, dedup_md5=True)
+    else:
+        tr_df = pd.read_csv(tr_csv)
+        va_df = pd.read_csv(va_csv)
+        te_df = pd.read_csv(te_csv)
+
+    print("\n" + "=" * 90)
+    print("LEAKAGE TEST SUITE: EXACT-MD5 DEDUPLICATED SPLIT MODE")
+    print("=" * 90)
+
+    _verify_split_leakage_and_integrity(
+        tr_df, va_df, te_df, split_label="MD5-Dedup Split", check_dedup_md5=True
+    )
+
+    min_te = min(len(te_df[te_df["class_name"] == c]) for c in te_df["class_name"].unique())
+    print(f"[PASS] Exact-MD5 Dedup Mode: Train={len(tr_df):>5,} ({tr_df['group_id'].nunique():>4,} grp) | "
+          f"Val={len(va_df):>5,} ({va_df['group_id'].nunique():>4,} grp) | "
+          f"Test={len(te_df):>5,} ({te_df['group_id'].nunique():>4,} grp) | "
+          f"Min test class count={min_te} | Leakage: ZERO (Exact MD5s unique, Groups=0, pHash<=4=0, Conflicts=0)")
+    print("=" * 90 + "\n")
+
+
 if __name__ == "__main__":
     test_extract_base_id()
     test_synthetic_group_stratified_split()
@@ -279,4 +425,7 @@ if __name__ == "__main__":
     test_no_group_id_appears_in_more_than_one_split()
     test_no_pair_with_phash_distance_le_4_crosses_splits()
     test_splits_per_class_and_per_crop_counts_and_threshold()
-    print("All split tests executed and passed successfully!")
+    test_kfold_splits_all_folds_no_leakage()
+    test_md5_deduplicated_mode_no_leakage()
+    print("All split tests (Baseline, 5-Fold, and MD5-Dedup) executed and passed successfully!")
+
