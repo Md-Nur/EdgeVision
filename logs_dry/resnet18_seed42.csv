@@ -1,0 +1,3 @@
+epoch,phase,train_loss,val_loss,val_macro_f1,val_accuracy,lr,is_best,early_stop_marked
+1,phase1,16.9839,16.8731,0.0282,0.1094,0.001,True,False
+2,phase2,16.9086,16.8622,0.0482,0.2031,1e-06,True,False

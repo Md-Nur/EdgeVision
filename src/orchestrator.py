@@ -27,6 +27,7 @@ import json
 import random
 import platform
 import argparse
+from collections import Counter
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -205,10 +206,11 @@ def evaluate_split(
     macro_f1 = float(f1_score(y_true, y_pred, average="macro", zero_division=0))
     weighted_f1 = float(f1_score(y_true, y_pred, average="weighted", zero_division=0))
 
-    per_class_f1 = f1_score(y_true, y_pred, average=None, zero_division=0)
-    per_class_prec = precision_score(y_true, y_pred, average=None, zero_division=0)
-    per_class_rec = recall_score(y_true, y_pred, average=None, zero_division=0)
-    cm = confusion_matrix(y_true, y_pred)
+    labels_order = list(range(len(class_names)))
+    per_class_f1 = f1_score(y_true, y_pred, labels=labels_order, average=None, zero_division=0)
+    per_class_prec = precision_score(y_true, y_pred, labels=labels_order, average=None, zero_division=0)
+    per_class_rec = recall_score(y_true, y_pred, labels=labels_order, average=None, zero_division=0)
+    cm = confusion_matrix(y_true, y_pred, labels=labels_order)
 
     per_class_dict = {}
     for idx, cname in enumerate(class_names):
@@ -241,9 +243,68 @@ def evaluate_split(
     return res
 
 
+def check_collapse_guard(
+    val_res: Dict[str, Any],
+    epoch: int,
+    class_names: List[str],
+    min_epochs: int = 10,
+    min_macro_f1: float = 0.2,
+    max_single_class_ratio: float = 0.90,
+) -> Tuple[bool, str, Dict[str, int]]:
+    """
+    Collapse guard:
+    If after min_epochs (default 10), validation macro-F1 is below 0.2,
+    or the model predicts a single class for more than 90% of validation images:
+    Returns (is_collapsed, reason_string, prediction_histogram).
+    """
+    if epoch < min_epochs:
+        return False, "", {}
+
+    val_preds = val_res.get("y_pred", [])
+    total_samples = len(val_preds)
+    if total_samples == 0:
+        return False, "", {}
+
+    pred_counts = Counter(val_preds)
+    dominant_class_idx, dominant_count = pred_counts.most_common(1)[0]
+    dominant_ratio = dominant_count / total_samples
+
+    is_f1_collapsed = val_res["macro_f1"] < min_macro_f1
+    is_class_collapsed = dominant_ratio > max_single_class_ratio
+
+    histogram = {class_names[i]: int(pred_counts.get(i, 0)) for i in range(len(class_names))}
+
+    if not (is_f1_collapsed or is_class_collapsed):
+        return False, "", histogram
+
+    reasons = []
+    if is_f1_collapsed:
+        reasons.append(f"Validation macro-F1 < {min_macro_f1} ({val_res['macro_f1']:.4f})")
+    if is_class_collapsed:
+        dom_name = class_names[dominant_class_idx] if dominant_class_idx < len(class_names) else f"class_{dominant_class_idx}"
+        reasons.append(f"Dominant single class '{dom_name}' predicted for {dominant_count}/{total_samples} ({dominant_ratio:.1%}) > {max_single_class_ratio:.0%}")
+
+    reason_str = " & ".join(reasons)
+
+    print("\n" + "!" * 80)
+    print(f"[COLLAPSE GUARD TRIGGERED at Epoch {epoch}]: {reason_str}")
+    print("Validation Prediction Histogram:")
+    for idx, cname in enumerate(class_names):
+        c_count = pred_counts.get(idx, 0)
+        c_pct = (c_count / total_samples) * 100
+        bar = "#" * int(c_pct / 2)
+        print(f"  [{idx:2d}] {cname:<30}: {c_count:4d} ({c_pct:5.1f}%) | {bar}")
+    print("!" * 80 + "\n")
+
+    return True, reason_str, histogram
+
+
 def is_run_completed(json_path: Path, dry_run: bool = False) -> bool:
     """Check if result JSON represents a complete, valid run."""
     if not json_path.exists():
+        return False
+    # If checking for real runs, dry directory or dry-run JSONs must NEVER be considered completed
+    if not dry_run and ("dry" in str(json_path).lower()):
         return False
     try:
         with open(json_path, "r", encoding="utf-8") as f:
@@ -279,6 +340,7 @@ def run_pretrained_model(
     logs_dir: Path = Path("logs"),
     results_dir: Path = Path("results"),
     dry_run: bool = False,
+    collapse_guard_min_epochs: int = 10,
 ) -> Dict[str, Any]:
     """Train and evaluate a pretrained baseline model."""
     run_id = f"{model_name}_seed{seed}"
@@ -316,6 +378,9 @@ def run_pretrained_model(
     consecutive_no_improve = 0
     stopped_early = False
     stop_reason = ""
+    is_collapsed = False
+    collapse_reason = ""
+    pred_histogram = {}
     epoch_logs = []
 
     current_epoch = 0
@@ -360,11 +425,28 @@ def run_pretrained_model(
             else:
                 consecutive_no_improve += 1
 
+            stop_marked_str = ""
+            # Collapse guard check
+            collapsed, c_reason, c_hist = check_collapse_guard(
+                val_res=val_res,
+                epoch=current_epoch,
+                class_names=class_names,
+                min_epochs=collapse_guard_min_epochs,
+            )
+            if collapsed:
+                is_collapsed = True
+                collapse_reason = c_reason
+                pred_histogram = c_hist
+                stopped_early = True
+                stop_reason = f"COLLAPSED: {collapse_reason}"
+                stop_marked_str = f"STOPPED_EARLY: {stop_reason}"
+
             print(
                 f"[P1 Ep {ep}/{phase1_epochs} (Total Ep {current_epoch})] "
                 f"Train Loss: {tr_loss:.4f} | Val Loss: {val_res['loss']:.4f} | "
                 f"Val Acc: {val_res['accuracy']:.4f} | Val Macro-F1: {val_res['macro_f1']:.4f}"
                 + (" [BEST]" if is_best else "")
+                + (f" -> {stop_marked_str}" if stop_marked_str else "")
             )
 
             epoch_logs.append({
@@ -376,10 +458,14 @@ def run_pretrained_model(
                 "val_accuracy": val_res["accuracy"],
                 "lr": 1e-3,
                 "is_best": is_best,
-                "early_stop_marked": False,
+                "early_stop_marked": stop_marked_str if stop_marked_str else False,
             })
             # Flush CSV incrementally so progress survives interruption
             pd.DataFrame(epoch_logs).to_csv(log_csv_path, index=False)
+
+            if stopped_early:
+                print(f"\n[EARLY STOPPING TRIGGERED]: {stop_reason}")
+                break
 
     # ==========================================================
     # PHASE 2: Fine-Tuning All Layers with Cosine Decay
@@ -426,8 +512,22 @@ def run_pretrained_model(
                 consecutive_no_improve += 1
 
             stop_marked_str = ""
+            # Collapse guard check
+            collapsed, c_reason, c_hist = check_collapse_guard(
+                val_res=val_res,
+                epoch=current_epoch,
+                class_names=class_names,
+                min_epochs=collapse_guard_min_epochs,
+            )
+            if collapsed:
+                is_collapsed = True
+                collapse_reason = c_reason
+                pred_histogram = c_hist
+                stopped_early = True
+                stop_reason = f"COLLAPSED: {collapse_reason}"
+                stop_marked_str = f"STOPPED_EARLY: {stop_reason}"
             # Check 15-epoch no improvement rule
-            if consecutive_no_improve >= overall_patience:
+            elif consecutive_no_improve >= overall_patience:
                 stopped_early = True
                 stop_reason = f"No improvement in validation macro-F1 for {overall_patience} epochs"
                 stop_marked_str = f"STOPPED_EARLY: {stop_reason}"
@@ -501,6 +601,12 @@ def run_pretrained_model(
         "type": "pretrained",
         "seed": seed,
         "dry_run": dry_run,
+        "status": "COLLAPSED" if is_collapsed else "COMPLETED",
+        "collapsed": is_collapsed,
+        "collapse_reason": collapse_reason if is_collapsed else None,
+        "prediction_histogram": pred_histogram if is_collapsed else None,
+        "epochs_run": current_epoch,
+        "epochs_logged": len(epoch_logs),
         "macro_f1": std_test_metrics["macro_f1"],
         "accuracy": std_test_metrics["accuracy"],
         "standard_test": std_test_metrics,
@@ -544,6 +650,7 @@ def run_custom_model(
     logs_dir: Path = Path("logs"),
     results_dir: Path = Path("results"),
     dry_run: bool = False,
+    collapse_guard_min_epochs: int = 10,
 ) -> Dict[str, Any]:
     """Train and evaluate a CustomNet model from scratch."""
     run_id = f"{model_name}_seed{seed}"
@@ -584,6 +691,9 @@ def run_custom_model(
     consecutive_no_improve = 0
     stopped_early = False
     stop_reason = ""
+    is_collapsed = False
+    collapse_reason = ""
+    pred_histogram = {}
     epoch_logs = []
 
     for ep in range(1, num_epochs + 1):
@@ -625,8 +735,22 @@ def run_custom_model(
             consecutive_no_improve += 1
 
         stop_marked_str = ""
+        # Collapse guard check
+        collapsed, c_reason, c_hist = check_collapse_guard(
+            val_res=val_res,
+            epoch=ep,
+            class_names=class_names,
+            min_epochs=collapse_guard_min_epochs,
+        )
+        if collapsed:
+            is_collapsed = True
+            collapse_reason = c_reason
+            pred_histogram = c_hist
+            stopped_early = True
+            stop_reason = f"COLLAPSED: {collapse_reason}"
+            stop_marked_str = f"STOPPED_EARLY: {stop_reason}"
         # 15-epoch no improvement check
-        if consecutive_no_improve >= overall_patience and not dry_run:
+        elif consecutive_no_improve >= overall_patience and not dry_run:
             stopped_early = True
             stop_reason = f"No improvement in validation macro-F1 for {overall_patience} epochs"
             stop_marked_str = f"STOPPED_EARLY: {stop_reason}"
@@ -697,6 +821,12 @@ def run_custom_model(
         "type": "custom",
         "seed": seed,
         "dry_run": dry_run,
+        "status": "COLLAPSED" if is_collapsed else "COMPLETED",
+        "collapsed": is_collapsed,
+        "collapse_reason": collapse_reason if is_collapsed else None,
+        "prediction_histogram": pred_histogram if is_collapsed else None,
+        "epochs_run": ep,
+        "epochs_logged": len(epoch_logs),
         "macro_f1": std_test_metrics["macro_f1"],
         "accuracy": std_test_metrics["accuracy"],
         "standard_test": std_test_metrics,
@@ -725,6 +855,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Stage A Multi-Crop Disease Orchestrator.")
     parser.add_argument("--dry-run", action="store_true", default=False, help="Run 2-epoch dry run of the pipeline")
     parser.add_argument("--dry-run-samples-per-class", type=int, default=50, help="Train samples per class for dry run (default: 50)")
+    parser.add_argument("--num-samples", type=int, default=None, help="Total sample count for dry run / smoke test (e.g. 64)")
+    parser.add_argument("--collapse-guard-min-epochs", type=int, default=10, help="Epoch threshold for collapse guard (default: 10)")
     parser.add_argument("--force", action="store_true", default=False, help="Force rerun even if results exist")
     parser.add_argument("--seed", type=int, default=42, help="Deterministic random seed (default: 42)")
     parser.add_argument("--batch-size", type=int, default=64, help="Batch size for training and eval (default: 64)")
@@ -734,15 +866,23 @@ def main() -> None:
     parser.add_argument("--logs-dir", type=str, default="logs", help="Directory for training logs")
     parser.add_argument("--reports-dir", type=str, default="reports", help="Directory for report artifacts")
     parser.add_argument("--models", nargs="+", default=None, help="Subset of models to run (default: all 7 Stage A models)")
+    parser.add_argument("--device", type=str, default=None, help="Compute device ('cpu', 'mps', 'cuda'). Defaults to auto-detect.")
     args = parser.parse_args()
 
     set_seed(args.seed)
-    device = get_best_device()
+    device = torch.device(args.device) if args.device else get_best_device()
 
-    results_dir = Path(args.results_dir)
-    checkpoints_dir = Path(args.checkpoints_dir)
-    logs_dir = Path(args.logs_dir)
-    reports_dir = Path(args.reports_dir)
+    # Dry runs and smoke tests MUST write only to *_dry directories
+    if args.dry_run:
+        results_dir = Path("results_dry")
+        checkpoints_dir = Path("checkpoints_dry")
+        logs_dir = Path("logs_dry")
+        reports_dir = Path("reports_dry")
+    else:
+        results_dir = Path(args.results_dir)
+        checkpoints_dir = Path(args.checkpoints_dir)
+        logs_dir = Path(args.logs_dir)
+        reports_dir = Path(args.reports_dir)
     splits_dir = Path(args.splits_dir)
 
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -767,13 +907,29 @@ def main() -> None:
     print(f"Data Splits -> Train: {len(train_df):,} | Val: {len(val_df):,} | Std Test: {len(std_test_df):,} | Dedup Test: {len(dedup_test_df):,}")
 
     # Prepare datasets for run
-    if args.dry_run and args.dry_run_samples_per_class > 0:
-        print(f"\n[DRY RUN MODE]: Stratifying training to {args.dry_run_samples_per_class} images/class for fast 2-epoch verification...")
-        run_train_df = train_df.groupby("class_name").head(args.dry_run_samples_per_class).reset_index(drop=True)
-        run_val_df = val_df.groupby("class_name").head(20).reset_index(drop=True)
+    if args.dry_run:
+        if args.num_samples and args.num_samples > 0:
+            print(f"\n[DRY RUN MODE]: Subsetting to {args.num_samples} total images for dry run / smoke test...")
+            run_train_df = train_df.head(args.num_samples).reset_index(drop=True)
+            run_val_df = val_df.head(min(len(val_df), args.num_samples)).reset_index(drop=True)
+            run_std_test_df = std_test_df.head(min(len(std_test_df), args.num_samples)).reset_index(drop=True)
+            run_dedup_test_df = dedup_test_df.head(min(len(dedup_test_df), args.num_samples)).reset_index(drop=True)
+        elif args.dry_run_samples_per_class > 0:
+            print(f"\n[DRY RUN MODE]: Stratifying training to {args.dry_run_samples_per_class} images/class for fast 2-epoch verification...")
+            run_train_df = train_df.groupby("class_name").head(args.dry_run_samples_per_class).reset_index(drop=True)
+            run_val_df = val_df.groupby("class_name").head(20).reset_index(drop=True)
+            run_std_test_df = std_test_df.head(64).reset_index(drop=True)
+            run_dedup_test_df = dedup_test_df.head(64).reset_index(drop=True)
+        else:
+            run_train_df = train_df.head(64).reset_index(drop=True)
+            run_val_df = val_df.head(64).reset_index(drop=True)
+            run_std_test_df = std_test_df.head(64).reset_index(drop=True)
+            run_dedup_test_df = dedup_test_df.head(64).reset_index(drop=True)
     else:
         run_train_df = train_df
         run_val_df = val_df
+        run_std_test_df = std_test_df
+        run_dedup_test_df = dedup_test_df
 
     # Filter models if requested
     models_to_run = STAGE_A_MODELS
@@ -800,8 +956,8 @@ def main() -> None:
                 seed=args.seed,
                 train_df=run_train_df,
                 val_df=run_val_df,
-                std_test_df=std_test_df,
-                dedup_test_df=dedup_test_df,
+                std_test_df=run_std_test_df,
+                dedup_test_df=run_dedup_test_df,
                 class_names=class_names,
                 device=device,
                 batch_size=args.batch_size,
@@ -813,6 +969,7 @@ def main() -> None:
                 logs_dir=logs_dir,
                 results_dir=results_dir,
                 dry_run=args.dry_run,
+                collapse_guard_min_epochs=args.collapse_guard_min_epochs,
             )
         elif model_cfg["type"] == "custom":
             custom_ep = 2 if args.dry_run else 80
@@ -822,8 +979,8 @@ def main() -> None:
                 seed=args.seed,
                 train_df=run_train_df,
                 val_df=run_val_df,
-                std_test_df=std_test_df,
-                dedup_test_df=dedup_test_df,
+                std_test_df=run_std_test_df,
+                dedup_test_df=run_dedup_test_df,
                 class_names=class_names,
                 device=device,
                 batch_size=args.batch_size,
@@ -833,19 +990,28 @@ def main() -> None:
                 logs_dir=logs_dir,
                 results_dir=results_dir,
                 dry_run=args.dry_run,
+                collapse_guard_min_epochs=args.collapse_guard_min_epochs,
             )
 
     # Aggregate all completed results
-    print("\n" + "=" * 80)
-    print("ALL RUNS COMPLETE. BUILDING STAGE A TABLE & CONFUSION MATRICES...")
-    print("=" * 80)
-    aggregate_stage_a(
-        results_dir=results_dir,
-        output_table_path=results_dir / "stage_a_table.csv",
-        reports_dir=reports_dir,
-        n_bootstraps=1000,
-        seed=args.seed,
-    )
+    if not args.dry_run:
+        print("\n" + "=" * 80)
+        print("ALL RUNS COMPLETE. BUILDING STAGE A TABLE & CONFUSION MATRICES...")
+        print("=" * 80)
+        aggregate_stage_a(
+            results_dir=results_dir,
+            output_table_path=results_dir / "stage_a_table.csv",
+            reports_dir=reports_dir,
+            logs_dir=logs_dir,
+            n_bootstraps=1000,
+            seed=args.seed,
+        )
+    else:
+        print("\n" + "=" * 80)
+        print("DRY RUN FINISHED: All artifacts safely saved exclusively to dry directories:")
+        print(f"Results: {results_dir} | Checkpoints: {checkpoints_dir} | Logs: {logs_dir} | Reports: {reports_dir}")
+        print("Aggregator skipped as dry directories must never be aggregated into official results.")
+        print("=" * 80)
 
 
 if __name__ == "__main__":

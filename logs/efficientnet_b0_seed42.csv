@@ -1,3 +1,6 @@
 epoch,phase,train_loss,val_loss,val_macro_f1,val_accuracy,lr,is_best,early_stop_marked
-1,phase1,4.762,3.9827,0.1052,0.1375,0.001,True,False
-2,phase2,3.8215,2.4179,0.3922,0.4208,1e-06,True,False
+1,phase1,2.9883,2.4764,0.6534,0.7472,0.001,True,False
+2,phase1,2.1093,2.2762,0.7479,0.8332,0.001,True,False
+3,phase1,1.8906,2.1333,0.7895,0.8669,0.001,True,False
+4,phase2,1.5409,1.7694,0.9056,0.945,9.973e-05,True,False
+5,phase2,1.2365,1.6519,0.9535,0.9723,9.892e-05,True,False

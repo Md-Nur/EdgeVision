@@ -176,6 +176,7 @@ def aggregate_stage_a(
     results_dir: str | Path = "results",
     output_table_path: str | Path = "results/stage_a_table.csv",
     reports_dir: str | Path = "reports",
+    logs_dir: str | Path = "logs",
     n_bootstraps: int = 1000,
     seed: int = 42,
 ) -> pd.DataFrame:
@@ -183,6 +184,17 @@ def aggregate_stage_a(
     results_dir = Path(results_dir)
     output_table_path = Path(output_table_path)
     reports_dir = Path(reports_dir)
+    logs_dir = Path(logs_dir)
+
+    # Refuse to read from dry directories
+    res_str = str(results_dir).lower()
+    logs_str = str(logs_dir).lower()
+    if "dry" in results_dir.name.lower() or "dry" in res_str or "dry" in logs_str:
+        raise ValueError(
+            f"[REFUSED]: Aggregator refuses to read from dry directory '{results_dir}'. "
+            "Dry runs and smoke tests must never be aggregated into official results."
+        )
+
     reports_dir.mkdir(parents=True, exist_ok=True)
     output_table_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -202,6 +214,35 @@ def aggregate_stage_a(
 
         with open(json_file, "r", encoding="utf-8") as f:
             data = json.load(f)
+
+        # Refuse/skip if marked as dry_run inside results
+        if data.get("dry_run", False):
+            print(f"[WARNING] Run '{model_name}' has dry_run=True. Aggregator skips dry-run files.")
+            continue
+
+        # Check logged epochs: warn if fewer than 10 epochs logged
+        epochs_logged = data.get("epochs_logged", data.get("epochs_run", None))
+        if epochs_logged is None:
+            # Check corresponding CSV in logs_dir
+            run_id = json_file.stem
+            candidates = [
+                logs_dir / f"{run_id}.csv",
+                logs_dir / f"{model_name}_seed{seed}.csv",
+                logs_dir / f"{model_name}.csv",
+            ]
+            for cand in candidates:
+                if cand.exists():
+                    try:
+                        csv_df = pd.read_csv(cand)
+                        epochs_logged = len(csv_df)
+                        break
+                    except Exception:
+                        pass
+
+        if epochs_logged is not None and epochs_logged < 10:
+            print(f"[WARNING] Model '{model_name}' in '{results_dir}' has fewer than 10 epochs logged ({epochs_logged} epochs).")
+        elif epochs_logged is None:
+            print(f"[WARNING] Model '{model_name}' in '{results_dir}' has unknown epoch count (no epochs logged in JSON or logs/).")
 
         # Standard test split metrics
         std_test = data.get("standard_test", {})
@@ -327,6 +368,7 @@ def main() -> None:
     parser.add_argument("--results-dir", type=str, default="results", help="Directory with results/*.json")
     parser.add_argument("--output-table", type=str, default="results/stage_a_table.csv", help="Output CSV table path")
     parser.add_argument("--reports-dir", type=str, default="reports", help="Directory for confusion matrix PNGs")
+    parser.add_argument("--logs-dir", type=str, default="logs", help="Directory for per-epoch training CSV logs")
     parser.add_argument("--n-bootstraps", type=int, default=1000, help="Number of bootstrap resamples (default: 1000)")
     parser.add_argument("--seed", type=int, default=42, help="Bootstrap random seed (default: 42)")
     args = parser.parse_args()
@@ -335,6 +377,7 @@ def main() -> None:
         results_dir=args.results_dir,
         output_table_path=args.output_table,
         reports_dir=args.reports_dir,
+        logs_dir=args.logs_dir,
         n_bootstraps=args.n_bootstraps,
         seed=args.seed,
     )
