@@ -28,3 +28,4 @@ epoch,phase,train_loss,val_loss,val_macro_f1,val_accuracy,crop_accuracy,lr,is_be
 27,train_from_scratch,1.1796,1.6442,0.9397,0.9523,0.9985,0.00057864,False,False
 28,train_from_scratch,1.1738,1.6369,0.946,0.9544,0.9976,0.00055271,False,False
 29,train_from_scratch,1.167,1.6343,0.9486,0.9578,0.9985,0.00052664,False,False
+30,train_from_scratch,1.1717,1.6459,0.9384,0.9459,0.9985,0.0005005,False,False

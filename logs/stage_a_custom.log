@@ -42,3 +42,4 @@ Scheduler: CosineAnnealingLR (lr=0.001) | Label Smoothing: 0.1 | MixUp/CutMix: O
 [Custom Ep 27/60] Train Loss: 1.1796 | Val Loss: 1.6442 | Val Acc: 0.9523 | Val Macro-F1: 0.9397 | Crop Acc: 0.9985 | LR: 5.79e-04
 [Custom Ep 28/60] Train Loss: 1.1738 | Val Loss: 1.6369 | Val Acc: 0.9544 | Val Macro-F1: 0.9460 | Crop Acc: 0.9976 | LR: 5.53e-04
 [Custom Ep 29/60] Train Loss: 1.1670 | Val Loss: 1.6343 | Val Acc: 0.9578 | Val Macro-F1: 0.9486 | Crop Acc: 0.9985 | LR: 5.27e-04
+[Custom Ep 30/60] Train Loss: 1.1717 | Val Loss: 1.6459 | Val Acc: 0.9459 | Val Macro-F1: 0.9384 | Crop Acc: 0.9985 | LR: 5.01e-04
