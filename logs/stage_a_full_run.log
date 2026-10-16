@@ -21,3 +21,170 @@ Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
 
 --- Phase 1: Head Only Training (3 epochs, lr=1e-3) ---
 [P1 Ep 1/3 (Total Ep 1)] Train Loss: 2.0054 | Val Loss: 2.0664 | Val Acc: 0.8681 | Val Macro-F1: 0.7933 [BEST]
+[P1 Ep 2/3 (Total Ep 2)] Train Loss: 1.5731 | Val Loss: 1.9395 | Val Acc: 0.8943 | Val Macro-F1: 0.8286 [BEST]
+[P1 Ep 3/3 (Total Ep 3)] Train Loss: 1.5037 | Val Loss: 1.9027 | Val Acc: 0.8991 | Val Macro-F1: 0.8382 [BEST]
+
+--- Phase 2: Fine-Tuning All Layers (30 epochs, lr=1e-4, Cosine Decay) ---
+[P2 Ep 01/30 (Total Ep 04)] Train Loss: 1.3718 | Val Loss: 1.7372 | Val Acc: 0.9456 | Val Macro-F1: 0.9118 | LR: 9.97e-05 [BEST]
+[P2 Ep 02/30 (Total Ep 05)] Train Loss: 1.2736 | Val Loss: 1.6894 | Val Acc: 0.9541 | Val Macro-F1: 0.9186 | LR: 9.89e-05 [BEST]
+[P2 Ep 03/30 (Total Ep 06)] Train Loss: 1.2137 | Val Loss: 1.6653 | Val Acc: 0.9605 | Val Macro-F1: 0.9417 | LR: 9.76e-05 [BEST]
+[P2 Ep 04/30 (Total Ep 07)] Train Loss: 1.1819 | Val Loss: 1.6372 | Val Acc: 0.9657 | Val Macro-F1: 0.9474 | LR: 9.57e-05 [BEST]
+[P2 Ep 05/30 (Total Ep 08)] Train Loss: 1.1588 | Val Loss: 1.6233 | Val Acc: 0.9723 | Val Macro-F1: 0.9601 | LR: 9.34e-05 [BEST]
+[P2 Ep 06/30 (Total Ep 09)] Train Loss: 1.1436 | Val Loss: 1.6175 | Val Acc: 0.9711 | Val Macro-F1: 0.9562 | LR: 9.05e-05
+[P2 Ep 07/30 (Total Ep 10)] Train Loss: 1.1291 | Val Loss: 1.6083 | Val Acc: 0.9745 | Val Macro-F1: 0.9637 | LR: 8.73e-05 [BEST]
+[P2 Ep 08/30 (Total Ep 11)] Train Loss: 1.1244 | Val Loss: 1.6053 | Val Acc: 0.9730 | Val Macro-F1: 0.9595 | LR: 8.36e-05
+[P2 Ep 09/30 (Total Ep 12)] Train Loss: 1.1144 | Val Loss: 1.5952 | Val Acc: 0.9772 | Val Macro-F1: 0.9673 | LR: 7.96e-05 [BEST]
+[P2 Ep 10/30 (Total Ep 13)] Train Loss: 1.0970 | Val Loss: 1.5897 | Val Acc: 0.9742 | Val Macro-F1: 0.9634 | LR: 7.52e-05
+[P2 Ep 11/30 (Total Ep 14)] Train Loss: 1.1033 | Val Loss: 1.5872 | Val Acc: 0.9784 | Val Macro-F1: 0.9722 | LR: 7.06e-05 [BEST]
+[P2 Ep 12/30 (Total Ep 15)] Train Loss: 1.0859 | Val Loss: 1.5847 | Val Acc: 0.9760 | Val Macro-F1: 0.9670 | LR: 6.58e-05
+[P2 Ep 13/30 (Total Ep 16)] Train Loss: 1.0873 | Val Loss: 1.5839 | Val Acc: 0.9772 | Val Macro-F1: 0.9691 | LR: 6.08e-05
+[P2 Ep 14/30 (Total Ep 17)] Train Loss: 1.0828 | Val Loss: 1.5772 | Val Acc: 0.9790 | Val Macro-F1: 0.9727 | LR: 5.57e-05 [BEST]
+[P2 Ep 15/30 (Total Ep 18)] Train Loss: 1.0805 | Val Loss: 1.5765 | Val Acc: 0.9790 | Val Macro-F1: 0.9696 | LR: 5.05e-05
+[P2 Ep 16/30 (Total Ep 19)] Train Loss: 1.0780 | Val Loss: 1.5772 | Val Acc: 0.9796 | Val Macro-F1: 0.9728 | LR: 4.53e-05 [BEST]
+[P2 Ep 17/30 (Total Ep 20)] Train Loss: 1.0751 | Val Loss: 1.5774 | Val Acc: 0.9790 | Val Macro-F1: 0.9702 | LR: 4.02e-05
+[P2 Ep 18/30 (Total Ep 21)] Train Loss: 1.0730 | Val Loss: 1.5750 | Val Acc: 0.9793 | Val Macro-F1: 0.9696 | LR: 3.52e-05
+[P2 Ep 19/30 (Total Ep 22)] Train Loss: 1.0729 | Val Loss: 1.5745 | Val Acc: 0.9799 | Val Macro-F1: 0.9710 | LR: 3.04e-05
+[P2 Ep 20/30 (Total Ep 23)] Train Loss: 1.0695 | Val Loss: 1.5757 | Val Acc: 0.9787 | Val Macro-F1: 0.9710 | LR: 2.58e-05
+[P2 Ep 21/30 (Total Ep 24)] Train Loss: 1.0678 | Val Loss: 1.5750 | Val Acc: 0.9790 | Val Macro-F1: 0.9691 | LR: 2.14e-05
+[P2 Ep 22/30 (Total Ep 25)] Train Loss: 1.0667 | Val Loss: 1.5735 | Val Acc: 0.9793 | Val Macro-F1: 0.9697 | LR: 1.74e-05 -> STOPPED_EARLY: Early stopping patience (6 epochs) reached in Phase 2
+
+[EARLY STOPPING TRIGGERED]: Early stopping patience (6 epochs) reached in Phase 2
+
+[LOG SAVED]: Per-epoch logs written to: logs/resnet18_seed42.csv
+
+--- Evaluating Best Checkpoint on Test Splits ---
+Standard Test Split -> Macro-F1: 0.9593 | Acc: 0.9641
+Dedup Test Split    -> Macro-F1: 0.9566 | Acc: 0.9605
+Profiling model efficiency (Parameters, MB, GFLOPs, CPU Latency with 4 threads)...
+Params: 11,182,668 | Size: 42.66 MB | GFLOPs: 3.627 | CPU Latency: 7.81 ms +/- 1.85 ms
+[RESULT SAVED]: Evaluation payload saved to: results/resnet18_seed42.json
+
+================================================================================
+RUNNING PRETRAINED: mobilenetv3_small (mobilenetv3_small_100) | Run ID: mobilenetv3_small_seed42
+Device: mps | Dry Run: False | Batch Size: 64
+Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
+================================================================================
+
+--- Phase 1: Head Only Training (3 epochs, lr=1e-3) ---
+[P1 Ep 1/3 (Total Ep 1)] Train Loss: 3.2041 | Val Loss: 2.6504 | Val Acc: 0.7138 | Val Macro-F1: 0.6138 [BEST]
+[P1 Ep 2/3 (Total Ep 2)] Train Loss: 2.2312 | Val Loss: 2.3255 | Val Acc: 0.8128 | Val Macro-F1: 0.7270 [BEST]
+[P1 Ep 3/3 (Total Ep 3)] Train Loss: 1.9650 | Val Loss: 2.1481 | Val Acc: 0.8453 | Val Macro-F1: 0.7653 [BEST]
+
+--- Phase 2: Fine-Tuning All Layers (30 epochs, lr=1e-4, Cosine Decay) ---
+[P2 Ep 01/30 (Total Ep 04)] Train Loss: 1.5461 | Val Loss: 1.8635 | Val Acc: 0.8593 | Val Macro-F1: 0.7799 | LR: 9.97e-05 [BEST]
+[P2 Ep 02/30 (Total Ep 05)] Train Loss: 1.3261 | Val Loss: 1.7067 | Val Acc: 0.9480 | Val Macro-F1: 0.9050 | LR: 9.89e-05 [BEST]
+[P2 Ep 03/30 (Total Ep 06)] Train Loss: 1.2303 | Val Loss: 1.6425 | Val Acc: 0.9614 | Val Macro-F1: 0.9390 | LR: 9.76e-05 [BEST]
+[P2 Ep 04/30 (Total Ep 07)] Train Loss: 1.1799 | Val Loss: 1.6415 | Val Acc: 0.9623 | Val Macro-F1: 0.9429 | LR: 9.57e-05 [BEST]
+[P2 Ep 05/30 (Total Ep 08)] Train Loss: 1.1395 | Val Loss: 1.6000 | Val Acc: 0.9763 | Val Macro-F1: 0.9598 | LR: 9.34e-05 [BEST]
+[P2 Ep 06/30 (Total Ep 09)] Train Loss: 1.1188 | Val Loss: 1.6238 | Val Acc: 0.9617 | Val Macro-F1: 0.9511 | LR: 9.05e-05
+[P2 Ep 07/30 (Total Ep 10)] Train Loss: 1.1081 | Val Loss: 1.6321 | Val Acc: 0.9629 | Val Macro-F1: 0.9549 | LR: 8.73e-05
+[P2 Ep 08/30 (Total Ep 11)] Train Loss: 1.0883 | Val Loss: 1.5975 | Val Acc: 0.9717 | Val Macro-F1: 0.9614 | LR: 8.36e-05 [BEST]
+[P2 Ep 09/30 (Total Ep 12)] Train Loss: 1.0815 | Val Loss: 1.6046 | Val Acc: 0.9687 | Val Macro-F1: 0.9651 | LR: 7.96e-05 [BEST]
+[P2 Ep 10/30 (Total Ep 13)] Train Loss: 1.0703 | Val Loss: 1.6097 | Val Acc: 0.9678 | Val Macro-F1: 0.9649 | LR: 7.52e-05
+[P2 Ep 11/30 (Total Ep 14)] Train Loss: 1.0650 | Val Loss: 1.5843 | Val Acc: 0.9711 | Val Macro-F1: 0.9648 | LR: 7.06e-05
+[P2 Ep 12/30 (Total Ep 15)] Train Loss: 1.0556 | Val Loss: 1.5711 | Val Acc: 0.9799 | Val Macro-F1: 0.9719 | LR: 6.58e-05 [BEST]
+[P2 Ep 13/30 (Total Ep 16)] Train Loss: 1.0556 | Val Loss: 1.5904 | Val Acc: 0.9730 | Val Macro-F1: 0.9621 | LR: 6.08e-05
+[P2 Ep 14/30 (Total Ep 17)] Train Loss: 1.0527 | Val Loss: 1.5692 | Val Acc: 0.9772 | Val Macro-F1: 0.9698 | LR: 5.57e-05
+[P2 Ep 15/30 (Total Ep 18)] Train Loss: 1.0486 | Val Loss: 1.5923 | Val Acc: 0.9696 | Val Macro-F1: 0.9581 | LR: 5.05e-05
+[P2 Ep 16/30 (Total Ep 19)] Train Loss: 1.0448 | Val Loss: 1.5759 | Val Acc: 0.9796 | Val Macro-F1: 0.9741 | LR: 4.53e-05 [BEST]
+[P2 Ep 17/30 (Total Ep 20)] Train Loss: 1.0434 | Val Loss: 1.5757 | Val Acc: 0.9793 | Val Macro-F1: 0.9720 | LR: 4.02e-05
+[P2 Ep 18/30 (Total Ep 21)] Train Loss: 1.0426 | Val Loss: 1.5872 | Val Acc: 0.9702 | Val Macro-F1: 0.9620 | LR: 3.52e-05
+[P2 Ep 19/30 (Total Ep 22)] Train Loss: 1.0411 | Val Loss: 1.5759 | Val Acc: 0.9760 | Val Macro-F1: 0.9676 | LR: 3.04e-05
+[P2 Ep 20/30 (Total Ep 23)] Train Loss: 1.0364 | Val Loss: 1.5769 | Val Acc: 0.9784 | Val Macro-F1: 0.9683 | LR: 2.58e-05
+[P2 Ep 21/30 (Total Ep 24)] Train Loss: 1.0397 | Val Loss: 1.5745 | Val Acc: 0.9766 | Val Macro-F1: 0.9693 | LR: 2.14e-05
+[P2 Ep 22/30 (Total Ep 25)] Train Loss: 1.0383 | Val Loss: 1.5728 | Val Acc: 0.9796 | Val Macro-F1: 0.9732 | LR: 1.74e-05 -> STOPPED_EARLY: Early stopping patience (6 epochs) reached in Phase 2
+
+[EARLY STOPPING TRIGGERED]: Early stopping patience (6 epochs) reached in Phase 2
+
+[LOG SAVED]: Per-epoch logs written to: logs/mobilenetv3_small_seed42.csv
+
+--- Evaluating Best Checkpoint on Test Splits ---
+Standard Test Split -> Macro-F1: 0.9551 | Acc: 0.9576
+Dedup Test Split    -> Macro-F1: 0.9528 | Acc: 0.9543
+Profiling model efficiency (Parameters, MB, GFLOPs, CPU Latency with 4 threads)...
+Params: 1,530,156 | Size: 5.84 MB | GFLOPs: 0.111 | CPU Latency: 29.4 ms +/- 12.62 ms
+[RESULT SAVED]: Evaluation payload saved to: results/mobilenetv3_small_seed42.json
+
+================================================================================
+RUNNING PRETRAINED: mobilenetv3_large (mobilenetv3_large_100) | Run ID: mobilenetv3_large_seed42
+Device: mps | Dry Run: False | Batch Size: 64
+Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
+================================================================================
+
+--- Phase 1: Head Only Training (3 epochs, lr=1e-3) ---
+[P1 Ep 1/3 (Total Ep 1)] Train Loss: 2.7513 | Val Loss: 2.5104 | Val Acc: 0.7414 | Val Macro-F1: 0.6793 [BEST]
+[P1 Ep 2/3 (Total Ep 2)] Train Loss: 1.9631 | Val Loss: 2.2654 | Val Acc: 0.7879 | Val Macro-F1: 0.7237 [BEST]
+[P1 Ep 3/3 (Total Ep 3)] Train Loss: 1.7812 | Val Loss: 2.1229 | Val Acc: 0.8554 | Val Macro-F1: 0.7909 [BEST]
+
+--- Phase 2: Fine-Tuning All Layers (30 epochs, lr=1e-4, Cosine Decay) ---
+[P2 Ep 01/30 (Total Ep 04)] Train Loss: 1.5150 | Val Loss: 1.8021 | Val Acc: 0.9538 | Val Macro-F1: 0.9307 | LR: 9.97e-05 [BEST]
+[P2 Ep 02/30 (Total Ep 05)] Train Loss: 1.2914 | Val Loss: 1.6836 | Val Acc: 0.9620 | Val Macro-F1: 0.9340 | LR: 9.89e-05 [BEST]
+[P2 Ep 03/30 (Total Ep 06)] Train Loss: 1.2046 | Val Loss: 1.6530 | Val Acc: 0.9669 | Val Macro-F1: 0.9430 | LR: 9.76e-05 [BEST]
+================================================================================
+ Mukti Stage A: Model Training & Evaluation Orchestrator
+================================================================================
+ Project Root : /Users/md.nurealamsiddiquee/Projects/Mukti
+ Python Bin   : /Users/md.nurealamsiddiquee/Projects/Mukti/.venv/bin/python
+ Arguments    : 
+================================================================================
+================================================================================
+STAGE A: MULTI-CROP LEAF DISEASE DIAGNOSIS ORCHESTRATOR
+Seed: 42 | Device: mps | Dry Run: False | Batch Size: 64
+Results: results | Checkpoints: checkpoints | Logs: logs
+================================================================================
+Classes (12): ['Papaya___Anthracnose', 'Papaya___Healthy', 'Papaya___Leaf_Curl', 'Papaya___Ringspot', 'Potato___Early_Blight', 'Potato___Healthy', 'Potato___Late_Blight', 'Potato___Leafroll_Virus', 'Rice___Bacterial_Leaf_Blight', 'Rice___Brown_Spot', 'Rice___Healthy', 'Rice___Tungro']
+Data Splits -> Train: 15,611 | Val: 3,291 | Std Test: 3,256 | Dedup Test: 2,864
+
+[SKIP] Run resnet18_seed42 already exists at results/resnet18_seed42.json. Skipping to next...
+
+[SKIP] Run mobilenetv3_small_seed42 already exists at results/mobilenetv3_small_seed42.json. Skipping to next...
+
+================================================================================
+RUNNING PRETRAINED: mobilenetv3_large (mobilenetv3_large_100) | Run ID: mobilenetv3_large_seed42
+Device: mps | Dry Run: False | Batch Size: 64
+Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
+================================================================================
+
+--- Phase 1: Head Only Training (3 epochs, lr=1e-3) ---
+[P1 Ep 1/3 (Total Ep 1)] Train Loss: 2.7310 | Val Loss: 2.5227 | Val Acc: 0.7435 | Val Macro-F1: 0.6543 [BEST]
+[P1 Ep 2/3 (Total Ep 2)] Train Loss: 1.9752 | Val Loss: 2.2683 | Val Acc: 0.8241 | Val Macro-F1: 0.7470 [BEST]
+[P1 Ep 3/3 (Total Ep 3)] Train Loss: 1.7705 | Val Loss: 2.1090 | Val Acc: 0.8657 | Val Macro-F1: 0.7968 [BEST]
+
+--- Phase 2: Fine-Tuning All Layers (30 epochs, lr=1e-4, Cosine Decay) ---
+[P2 Ep 01/30 (Total Ep 04)] Train Loss: 1.5298 | Val Loss: 1.7838 | Val Acc: 0.9502 | Val Macro-F1: 0.9216 | LR: 9.97e-05 [BEST]
+[P2 Ep 02/30 (Total Ep 05)] Train Loss: 1.2976 | Val Loss: 1.6892 | Val Acc: 0.9602 | Val Macro-F1: 0.9407 | LR: 9.89e-05 [BEST]
+[P2 Ep 03/30 (Total Ep 06)] Train Loss: 1.2046 | Val Loss: 1.6490 | Val Acc: 0.9654 | Val Macro-F1: 0.9497 | LR: 9.76e-05 [BEST]
+[P2 Ep 04/30 (Total Ep 07)] Train Loss: 1.1531 | Val Loss: 1.6226 | Val Acc: 0.9690 | Val Macro-F1: 0.9511 | LR: 9.57e-05 [BEST]
+[P2 Ep 05/30 (Total Ep 08)] Train Loss: 1.1251 | Val Loss: 1.6053 | Val Acc: 0.9717 | Val Macro-F1: 0.9550 | LR: 9.34e-05 [BEST]
+[P2 Ep 06/30 (Total Ep 09)] Train Loss: 1.1032 | Val Loss: 1.6029 | Val Acc: 0.9717 | Val Macro-F1: 0.9576 | LR: 9.05e-05 [BEST]
+[P2 Ep 07/30 (Total Ep 10)] Train Loss: 1.0894 | Val Loss: 1.5933 | Val Acc: 0.9754 | Val Macro-F1: 0.9599 | LR: 8.73e-05 [BEST]
+[P2 Ep 08/30 (Total Ep 11)] Train Loss: 1.0819 | Val Loss: 1.5848 | Val Acc: 0.9769 | Val Macro-F1: 0.9646 | LR: 8.36e-05 [BEST]
+[P2 Ep 09/30 (Total Ep 12)] Train Loss: 1.0698 | Val Loss: 1.5862 | Val Acc: 0.9730 | Val Macro-F1: 0.9539 | LR: 7.96e-05
+[P2 Ep 10/30 (Total Ep 13)] Train Loss: 1.0644 | Val Loss: 1.5773 | Val Acc: 0.9784 | Val Macro-F1: 0.9690 | LR: 7.52e-05 [BEST]
+[P2 Ep 11/30 (Total Ep 14)] Train Loss: 1.0627 | Val Loss: 1.5739 | Val Acc: 0.9748 | Val Macro-F1: 0.9644 | LR: 7.06e-05
+[P2 Ep 12/30 (Total Ep 15)] Train Loss: 1.0609 | Val Loss: 1.5712 | Val Acc: 0.9796 | Val Macro-F1: 0.9695 | LR: 6.58e-05 [BEST]
+[P2 Ep 13/30 (Total Ep 16)] Train Loss: 1.0573 | Val Loss: 1.5733 | Val Acc: 0.9769 | Val Macro-F1: 0.9625 | LR: 6.08e-05
+[P2 Ep 14/30 (Total Ep 17)] Train Loss: 1.0546 | Val Loss: 1.5797 | Val Acc: 0.9739 | Val Macro-F1: 0.9615 | LR: 5.57e-05
+[P2 Ep 15/30 (Total Ep 18)] Train Loss: 1.0513 | Val Loss: 1.5684 | Val Acc: 0.9781 | Val Macro-F1: 0.9683 | LR: 5.05e-05
+[P2 Ep 16/30 (Total Ep 19)] Train Loss: 1.0524 | Val Loss: 1.5661 | Val Acc: 0.9796 | Val Macro-F1: 0.9653 | LR: 4.53e-05
+[P2 Ep 17/30 (Total Ep 20)] Train Loss: 1.0506 | Val Loss: 1.5655 | Val Acc: 0.9802 | Val Macro-F1: 0.9666 | LR: 4.02e-05
+[P2 Ep 18/30 (Total Ep 21)] Train Loss: 1.0503 | Val Loss: 1.5666 | Val Acc: 0.9790 | Val Macro-F1: 0.9660 | LR: 3.52e-05 -> STOPPED_EARLY: Early stopping patience (6 epochs) reached in Phase 2
+
+[EARLY STOPPING TRIGGERED]: Early stopping patience (6 epochs) reached in Phase 2
+
+[LOG SAVED]: Per-epoch logs written to: logs/mobilenetv3_large_seed42.csv
+
+--- Evaluating Best Checkpoint on Test Splits ---
+Standard Test Split -> Macro-F1: 0.9425 | Acc: 0.9585
+Dedup Test Split    -> Macro-F1: 0.9407 | Acc: 0.9553
+Profiling model efficiency (Parameters, MB, GFLOPs, CPU Latency with 4 threads)...
+Params: 4,217,404 | Size: 16.09 MB | GFLOPs: 0.431 | CPU Latency: 63.68 ms +/- 2.97 ms
+[RESULT SAVED]: Evaluation payload saved to: results/mobilenetv3_large_seed42.json
+
+================================================================================
+RUNNING PRETRAINED: efficientnet_b0 (efficientnet_b0) | Run ID: efficientnet_b0_seed42
+Device: mps | Dry Run: False | Batch Size: 64
+Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
+================================================================================
+
+--- Phase 1: Head Only Training (3 epochs, lr=1e-3) ---

@@ -378,6 +378,8 @@ def run_pretrained_model(
                 "is_best": is_best,
                 "early_stop_marked": False,
             })
+            # Flush CSV incrementally so progress survives interruption
+            pd.DataFrame(epoch_logs).to_csv(log_csv_path, index=False)
 
     # ==========================================================
     # PHASE 2: Fine-Tuning All Layers with Cosine Decay
@@ -454,6 +456,8 @@ def run_pretrained_model(
                 "is_best": is_best,
                 "early_stop_marked": stop_marked_str if stop_marked_str else False,
             })
+            # Flush CSV incrementally so progress survives interruption
+            pd.DataFrame(epoch_logs).to_csv(log_csv_path, index=False)
 
             if stopped_early:
                 print(f"\n[EARLY STOPPING TRIGGERED]: {stop_reason}")
@@ -648,6 +652,8 @@ def run_custom_model(
             "is_best": is_best,
             "early_stop_marked": stop_marked_str if stop_marked_str else False,
         })
+        # Flush CSV incrementally so progress survives interruption
+        pd.DataFrame(epoch_logs).to_csv(log_csv_path, index=False)
 
         if stopped_early:
             print(f"\n[EARLY STOPPING TRIGGERED]: {stop_reason}")
