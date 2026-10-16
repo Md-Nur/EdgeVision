@@ -19,17 +19,19 @@ class GradCAM:
         self.activations: Optional[torch.Tensor] = None
         self.gradients: Optional[torch.Tensor] = None
 
-        # Register hooks
+        # Register forward hook; attaches tensor gradient hook during forward to prevent inplace view errors
         self.handles = [
             self.target_layer.register_forward_hook(self._save_activations),
-            self.target_layer.register_full_backward_hook(self._save_gradients),
         ]
 
     def _save_activations(self, module, input, output):
         self.activations = output
 
-    def _save_gradients(self, module, grad_input, grad_output):
-        self.gradients = grad_output[0]
+        def _save_gradients(grad):
+            self.gradients = grad
+
+        if output.requires_grad:
+            output.register_hook(_save_gradients)
 
     def generate_cam(
         self,
@@ -44,8 +46,14 @@ class GradCAM:
         self.model.eval()
         self.model.zero_grad()
 
-        # Forward pass
+        # Ensure input tracks gradients if model parameters are frozen
+        if not input_tensor.requires_grad:
+            input_tensor = input_tensor.clone().detach().requires_grad_(True)
+
+        # Forward pass (handles both standard classifiers and CustomNet dual-head)
         output = self.model(input_tensor)
+        if isinstance(output, tuple):
+            output = output[1]  # Disease logits
 
         if target_class is None:
             target_class = torch.argmax(output, dim=1).item()

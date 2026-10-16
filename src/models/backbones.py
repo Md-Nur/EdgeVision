@@ -42,6 +42,12 @@ class CropDiseaseClassifier(nn.Module):
                 return self.model.conv_head
             elif hasattr(self.model, "blocks"):
                 return self.model.blocks[-1]
+        elif "mobilenet" in name:
+            # In timm mobilenetv3, blocks[-1] is the last 7x7 spatial stage before pooling
+            if hasattr(self.model, "blocks"):
+                return self.model.blocks[-1]
+            elif hasattr(self.model, "conv_head"):
+                return self.model.conv_head
         elif "resnet" in name:
             # In resnet, layer4 is the last residual stage
             if hasattr(self.model, "layer4"):

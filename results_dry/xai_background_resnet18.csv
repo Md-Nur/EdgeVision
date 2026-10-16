@@ -1,0 +1,13 @@
+class_index,class_name,total_samples,correct_samples,incorrect_samples,mean_spurious_attention,spurious_attention_correct,spurious_attention_incorrect
+0,Papaya___Anthracnose,64,62,2,0.369,0.3799,0.0331
+1,Papaya___Black_Spot,0,0,0,0.0,0.0,0.0
+2,Papaya___Curl_Virus,0,0,0,0.0,0.0,0.0
+3,Papaya___Healthy,0,0,0,0.0,0.0,0.0
+4,Potato___Early_Blight,0,0,0,0.0,0.0,0.0
+5,Potato___Healthy,0,0,0,0.0,0.0,0.0
+6,Potato___Late_Blight,0,0,0,0.0,0.0,0.0
+7,Potato___PGR,0,0,0,0.0,0.0,0.0
+8,Rice___Bacterial_Blight,0,0,0,0.0,0.0,0.0
+9,Rice___Blast,0,0,0,0.0,0.0,0.0
+10,Rice___Brown_Spot,0,0,0,0.0,0.0,0.0
+11,Rice___Healthy,0,0,0,0.0,0.0,0.0

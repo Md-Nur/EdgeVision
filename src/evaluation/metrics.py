@@ -20,17 +20,18 @@ def compute_metrics(
     Compute comprehensive classification metrics.
     Emphasizes macro-F1 and per-class recall as specified in the roadmap.
     """
+    labels_order = list(range(len(class_names))) if class_names is not None else None
     acc = accuracy_score(y_true, y_pred)
-    macro_f1 = f1_score(y_true, y_pred, average="macro", zero_division=0)
-    weighted_f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
-    macro_precision = precision_score(y_true, y_pred, average="macro", zero_division=0)
-    macro_recall = recall_score(y_true, y_pred, average="macro", zero_division=0)
+    macro_f1 = f1_score(y_true, y_pred, labels=labels_order, average="macro", zero_division=0)
+    weighted_f1 = f1_score(y_true, y_pred, labels=labels_order, average="weighted", zero_division=0)
+    macro_precision = precision_score(y_true, y_pred, labels=labels_order, average="macro", zero_division=0)
+    macro_recall = recall_score(y_true, y_pred, labels=labels_order, average="macro", zero_division=0)
 
-    per_class_f1 = f1_score(y_true, y_pred, average=None, zero_division=0)
-    per_class_prec = precision_score(y_true, y_pred, average=None, zero_division=0)
-    per_class_rec = recall_score(y_true, y_pred, average=None, zero_division=0)
+    per_class_f1 = f1_score(y_true, y_pred, labels=labels_order, average=None, zero_division=0)
+    per_class_prec = precision_score(y_true, y_pred, labels=labels_order, average=None, zero_division=0)
+    per_class_rec = recall_score(y_true, y_pred, labels=labels_order, average=None, zero_division=0)
 
-    cm = confusion_matrix(y_true, y_pred)
+    cm = confusion_matrix(y_true, y_pred, labels=labels_order)
 
     report_dict = classification_report(
         y_true,
