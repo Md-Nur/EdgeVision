@@ -1,0 +1,13 @@
+model,crop,n_samples,macro_f1
+resnet18,Papaya,1486,0.9318
+resnet18,Potato,1163,0.986
+resnet18,Rice,215,0.9618
+mobilenetv3_small,Papaya,1486,0.9187
+mobilenetv3_small,Potato,1163,0.9927
+mobilenetv3_small,Rice,215,0.9527
+custom_none,Papaya,1486,0.8543
+custom_none,Potato,1163,0.9874
+custom_none,Rice,215,0.9442
+custom_se,Papaya,1486,0.8303
+custom_se,Potato,1163,0.9897
+custom_se,Rice,215,0.9637

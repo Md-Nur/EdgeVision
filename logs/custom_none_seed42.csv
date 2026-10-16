@@ -29,3 +29,20 @@ epoch,phase,train_loss,val_loss,val_macro_f1,val_accuracy,crop_accuracy,lr,is_be
 28,train_from_scratch,1.1738,1.6369,0.946,0.9544,0.9976,0.00055271,False,False
 29,train_from_scratch,1.167,1.6343,0.9486,0.9578,0.9985,0.00052664,False,False
 30,train_from_scratch,1.1717,1.6459,0.9384,0.9459,0.9985,0.0005005,False,False
+31,train_from_scratch,1.1637,1.6353,0.9426,0.9529,0.9982,0.00047436,False,False
+32,train_from_scratch,1.1629,1.6173,0.9634,0.966,0.9985,0.00044829,True,False
+33,train_from_scratch,1.1608,1.6296,0.9488,0.9532,0.9979,0.00042236,False,False
+34,train_from_scratch,1.1595,1.6292,0.9495,0.9569,0.9973,0.00039665,False,False
+35,train_from_scratch,1.1615,1.6276,0.9507,0.9562,0.9979,0.00037122,False,False
+36,train_from_scratch,1.1555,1.628,0.9535,0.9562,0.9982,0.00034615,False,False
+37,train_from_scratch,1.1529,1.6062,0.9604,0.9641,0.9979,0.0003215,False,False
+38,train_from_scratch,1.1558,1.6127,0.9544,0.9605,0.9985,0.00029734,False,False
+39,train_from_scratch,1.1524,1.6272,0.9554,0.959,0.9982,0.00027373,False,False
+40,train_from_scratch,1.1493,1.6257,0.9502,0.9544,0.9988,0.00025075,False,False
+41,train_from_scratch,1.1464,1.6115,0.9615,0.966,0.9982,0.00022845,False,False
+42,train_from_scratch,1.145,1.6154,0.9567,0.9587,0.9988,0.0002069,False,False
+43,train_from_scratch,1.1502,1.614,0.9589,0.9614,0.9979,0.00018615,False,False
+44,train_from_scratch,1.1476,1.6153,0.9592,0.959,0.9985,0.00016627,False,False
+45,train_from_scratch,1.1439,1.6111,0.9567,0.9611,0.9985,0.0001473,False,False
+46,train_from_scratch,1.1428,1.6095,0.9601,0.9623,0.9982,0.0001293,False,False
+47,train_from_scratch,1.1453,1.6169,0.9561,0.9593,0.9985,0.00011232,False,STOPPED_EARLY: No improvement in validation macro-F1 for 15 epochs
