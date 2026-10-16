@@ -2,3 +2,4 @@ data/Final Dataset/
 .venv/
 *.pyc
 todo.md
+data_cache/

@@ -1,0 +1,21 @@
+================================================================================
+STAGE A: MULTI-CROP LEAF DISEASE DIAGNOSIS ORCHESTRATOR
+Seed: 42 | Device: mps | Dry Run: False | Batch Size: 64
+Results: results | Checkpoints: checkpoints | Logs: logs
+================================================================================
+Classes (12): ['Papaya___Anthracnose', 'Papaya___Healthy', 'Papaya___Leaf_Curl', 'Papaya___Ringspot', 'Potato___Early_Blight', 'Potato___Healthy', 'Potato___Late_Blight', 'Potato___Leafroll_Virus', 'Rice___Bacterial_Leaf_Blight', 'Rice___Brown_Spot', 'Rice___Healthy', 'Rice___Tungro']
+Data Splits -> Train: 15,611 | Val: 3,291 | Std Test: 3,256 | Dedup Test: 2,864
+
+[SKIP] Run resnet18_seed42 already exists at results/resnet18_seed42.json. Skipping to next...
+
+[SKIP] Run mobilenetv3_small_seed42 already exists at results/mobilenetv3_small_seed42.json. Skipping to next...
+
+[SKIP] Run mobilenetv3_large_seed42 already exists at results/mobilenetv3_large_seed42.json. Skipping to next...
+
+================================================================================
+RUNNING PRETRAINED: efficientnet_b0 (efficientnet_b0) | Run ID: efficientnet_b0_seed42
+Device: mps | Dry Run: False | Batch Size: 64
+Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
+================================================================================
+
+--- Phase 1: Head Only Training (3 epochs, lr=1e-3) ---

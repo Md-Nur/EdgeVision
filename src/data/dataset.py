@@ -121,11 +121,16 @@ class CropDiseaseDataset(Dataset):
         row = self.df.iloc[idx]
         rel_path = row["image_path"]
 
-        # Resolve path
-        full_path = self.image_root / rel_path
-        if not full_path.exists():
-            # Fallback if image_root is already part of rel_path
-            full_path = Path(rel_path)
+        # Resolve path: direct path, image_root relative, or stripped data/ relative
+        direct_path = Path(rel_path)
+        if direct_path.exists():
+            full_path = direct_path
+        elif (self.image_root / rel_path).exists():
+            full_path = self.image_root / rel_path
+        elif str(rel_path).startswith("data/") and (self.image_root / str(rel_path)[5:]).exists():
+            full_path = self.image_root / str(rel_path)[5:]
+        else:
+            full_path = self.image_root / rel_path
 
         if not full_path.exists():
             raise FileNotFoundError(f"Image not found: {full_path}")
@@ -166,7 +171,10 @@ def get_dataloaders(
     image_root: str | Path = "data",
     image_size: int = 224,
     batch_size: int = 32,
-    num_workers: int = 2,
+    num_workers: Optional[int] = None,
+    persistent_workers: Optional[bool] = None,
+    prefetch_factor: Optional[int] = None,
+    pin_memory: Optional[bool] = None,
 ) -> Dict[str, DataLoader]:
     """Construct PyTorch DataLoaders for train, validation, and test sets."""
     all_transforms = get_transforms(image_size=image_size)
@@ -174,20 +182,41 @@ def get_dataloaders(
     train_ds = CropDiseaseDataset(train_df, image_root=image_root, transform=all_transforms["train"])
     val_ds = CropDiseaseDataset(val_df, image_root=image_root, transform=all_transforms["val"])
 
+    if num_workers is None:
+        cpu_cnt = os.cpu_count() or 4
+        num_workers = min(8, max(1, cpu_cnt - 2))
+
+    if pin_memory is None:
+        # pin_memory=False on MPS, True on CUDA
+        is_mps = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+        pin_memory = False if is_mps else torch.cuda.is_available()
+
+    if persistent_workers is None:
+        persistent_workers = True if num_workers > 0 else False
+
+    if prefetch_factor is None:
+        prefetch_factor = 4 if num_workers > 0 else None
+
+    loader_kwargs: Dict[str, Any] = {
+        "batch_size": batch_size,
+        "num_workers": num_workers,
+        "pin_memory": pin_memory,
+    }
+    if num_workers > 0:
+        loader_kwargs["persistent_workers"] = persistent_workers
+        if prefetch_factor is not None:
+            loader_kwargs["prefetch_factor"] = prefetch_factor
+
     loaders = {
         "train": DataLoader(
             train_ds,
-            batch_size=batch_size,
             shuffle=True,
-            num_workers=num_workers,
-            pin_memory=torch.cuda.is_available(),
+            **loader_kwargs,
         ),
         "val": DataLoader(
             val_ds,
-            batch_size=batch_size,
             shuffle=False,
-            num_workers=num_workers,
-            pin_memory=torch.cuda.is_available(),
+            **loader_kwargs,
         ),
     }
 
@@ -195,10 +224,8 @@ def get_dataloaders(
         test_ds = CropDiseaseDataset(test_df, image_root=image_root, transform=all_transforms["test"])
         loaders["test"] = DataLoader(
             test_ds,
-            batch_size=batch_size,
             shuffle=False,
-            num_workers=num_workers,
-            pin_memory=torch.cuda.is_available(),
+            **loader_kwargs,
         )
 
     return loaders

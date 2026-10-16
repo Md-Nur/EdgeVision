@@ -221,6 +221,7 @@ def train_single_model(
     early_stopping_patience: int = 5,
     models_dir: str | Path = "models",
     results_dir: str | Path = "results",
+    data_root: str | Path = "data",
 ) -> Dict[str, Any]:
     """Train and evaluate a single model run with fixed seed and 2-phase transfer learning."""
     set_seed(seed)
@@ -235,31 +236,24 @@ def train_single_model(
 
     # 1. Transforms & DataLoaders
     all_transforms = get_transforms(image_size=224, resize_dim=256)
-    train_ds = CropDiseaseDataset(train_df, transform=all_transforms["train"])
-    val_ds = CropDiseaseDataset(val_df, transform=all_transforms["val"])
-    test_ds = CropDiseaseDataset(test_df, transform=all_transforms["test"])
+    train_ds = CropDiseaseDataset(train_df, image_root=data_root, transform=all_transforms["train"])
+    val_ds = CropDiseaseDataset(val_df, image_root=data_root, transform=all_transforms["val"])
+    test_ds = CropDiseaseDataset(test_df, image_root=data_root, transform=all_transforms["test"])
 
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=min(4, os.cpu_count() or 2),
-        pin_memory=(device.type == "cuda"),
-    )
-    val_loader = DataLoader(
-        val_ds,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=min(4, os.cpu_count() or 2),
-        pin_memory=(device.type == "cuda"),
-    )
-    test_loader = DataLoader(
-        test_ds,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=min(4, os.cpu_count() or 2),
-        pin_memory=(device.type == "cuda"),
-    )
+    num_workers = min(8, max(1, (os.cpu_count() or 4) - 2))
+    pin_mem = False if device.type == "mps" else (device.type == "cuda")
+    loader_kwargs: Dict[str, Any] = {
+        "batch_size": batch_size,
+        "num_workers": num_workers,
+        "pin_memory": pin_mem,
+    }
+    if num_workers > 0:
+        loader_kwargs["persistent_workers"] = True
+        loader_kwargs["prefetch_factor"] = 4
+
+    train_loader = DataLoader(train_ds, shuffle=True, **loader_kwargs)
+    val_loader = DataLoader(val_ds, shuffle=False, **loader_kwargs)
+    test_loader = DataLoader(test_ds, shuffle=False, **loader_kwargs)
 
     # 2. Loss Criterion with Class Weights
     class_weights = compute_class_weights(train_df, num_classes=num_classes, method="inverse").to(device)
@@ -564,6 +558,12 @@ def main():
         help="Run 1-epoch CPU smoke test on a subset to verify pipeline without long training",
     )
     parser.add_argument(
+        "--data-root",
+        type=str,
+        default="data",
+        help="Root directory for dataset images (default: data)",
+    )
+    parser.add_argument(
         "--results-dir",
         type=str,
         default="results",
@@ -594,7 +594,7 @@ def main():
     else:
         device = torch.device(args.device)
 
-    # Smoke Test Mode
+    # Smoke Test Mode (writes only to results_dry, checkpoints_dry)
     if args.smoke_test:
         print("[SMOKE TEST MODE]: Running 1-epoch CPU smoke test on a small subset (120 samples)...")
         # Sample 10 images per class for fast verification
@@ -614,7 +614,9 @@ def main():
             phase1_epochs=1,
             phase2_epochs=0,
             use_focal=args.use_focal,
-            results_dir=args.results_dir,
+            models_dir="checkpoints_dry",
+            results_dir="results_dry",
+            data_root=args.data_root,
         )
         print("\n[SMOKE TEST COMPLETED SUCCESSFULLY]: Model forward, backward, eval, and profiling passed!")
         return
@@ -635,6 +637,7 @@ def main():
             phase2_lr=args.phase2_lr,
             use_focal=args.use_focal,
             results_dir=args.results_dir,
+            data_root=args.data_root,
         )
 
     # Summarize across seeds

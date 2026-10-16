@@ -247,7 +247,7 @@ def check_collapse_guard(
     val_res: Dict[str, Any],
     epoch: int,
     class_names: List[str],
-    min_epochs: int = 10,
+    min_epochs: int = 5,
     min_macro_f1: float = 0.2,
     max_single_class_ratio: float = 0.90,
 ) -> Tuple[bool, str, Dict[str, int]]:
@@ -339,8 +339,9 @@ def run_pretrained_model(
     checkpoints_dir: Path = Path("checkpoints"),
     logs_dir: Path = Path("logs"),
     results_dir: Path = Path("results"),
+    data_root: str = "data",
     dry_run: bool = False,
-    collapse_guard_min_epochs: int = 10,
+    collapse_guard_min_epochs: int = 5,
 ) -> Dict[str, Any]:
     """Train and evaluate a pretrained baseline model."""
     run_id = f"{model_name}_seed{seed}"
@@ -356,15 +357,26 @@ def run_pretrained_model(
 
     # 1. Transforms & Datasets
     transforms = get_transforms(image_size=224, resize_dim=256)
-    train_ds = CropDiseaseDataset(train_df, transform=transforms["train"])
-    val_ds = CropDiseaseDataset(val_df, transform=transforms["val"])
-    std_test_ds = CropDiseaseDataset(std_test_df, transform=transforms["test"])
-    dedup_test_ds = CropDiseaseDataset(dedup_test_df, transform=transforms["test"])
+    train_ds = CropDiseaseDataset(train_df, image_root=data_root, transform=transforms["train"])
+    val_ds = CropDiseaseDataset(val_df, image_root=data_root, transform=transforms["val"])
+    std_test_ds = CropDiseaseDataset(std_test_df, image_root=data_root, transform=transforms["test"])
+    dedup_test_ds = CropDiseaseDataset(dedup_test_df, image_root=data_root, transform=transforms["test"])
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0)
-    std_test_loader = DataLoader(std_test_ds, batch_size=batch_size, shuffle=False, num_workers=0)
-    dedup_test_loader = DataLoader(dedup_test_ds, batch_size=batch_size, shuffle=False, num_workers=0)
+    num_workers = min(8, max(1, (os.cpu_count() or 4) - 2))
+    pin_mem = False if device.type == "mps" else (device.type == "cuda")
+    loader_kwargs: Dict[str, Any] = {
+        "batch_size": batch_size,
+        "num_workers": num_workers,
+        "pin_memory": pin_mem,
+    }
+    if num_workers > 0:
+        loader_kwargs["persistent_workers"] = True
+        loader_kwargs["prefetch_factor"] = 4
+
+    train_loader = DataLoader(train_ds, shuffle=True, **loader_kwargs)
+    val_loader = DataLoader(val_ds, shuffle=False, **loader_kwargs)
+    std_test_loader = DataLoader(std_test_ds, shuffle=False, **loader_kwargs)
+    dedup_test_loader = DataLoader(dedup_test_ds, shuffle=False, **loader_kwargs)
 
     # 2. Loss with inverse class weights & label smoothing
     class_weights = compute_class_weights(train_df, num_classes=len(class_names), method="inverse").to(device)
@@ -649,8 +661,9 @@ def run_custom_model(
     checkpoints_dir: Path = Path("checkpoints"),
     logs_dir: Path = Path("logs"),
     results_dir: Path = Path("results"),
+    data_root: str = "data",
     dry_run: bool = False,
-    collapse_guard_min_epochs: int = 10,
+    collapse_guard_min_epochs: int = 5,
 ) -> Dict[str, Any]:
     """Train and evaluate a CustomNet model from scratch."""
     run_id = f"{model_name}_seed{seed}"
@@ -666,15 +679,26 @@ def run_custom_model(
 
     # 1. Transforms & Datasets
     transforms = get_transforms(image_size=224, resize_dim=256)
-    train_ds = CropDiseaseDataset(train_df, transform=transforms["train"])
-    val_ds = CropDiseaseDataset(val_df, transform=transforms["val"])
-    std_test_ds = CropDiseaseDataset(std_test_df, transform=transforms["test"])
-    dedup_test_ds = CropDiseaseDataset(dedup_test_df, transform=transforms["test"])
+    train_ds = CropDiseaseDataset(train_df, image_root=data_root, transform=transforms["train"])
+    val_ds = CropDiseaseDataset(val_df, image_root=data_root, transform=transforms["val"])
+    std_test_ds = CropDiseaseDataset(std_test_df, image_root=data_root, transform=transforms["test"])
+    dedup_test_ds = CropDiseaseDataset(dedup_test_df, image_root=data_root, transform=transforms["test"])
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=0)
-    std_test_loader = DataLoader(std_test_ds, batch_size=batch_size, shuffle=False, num_workers=0)
-    dedup_test_loader = DataLoader(dedup_test_ds, batch_size=batch_size, shuffle=False, num_workers=0)
+    num_workers = min(8, max(1, (os.cpu_count() or 4) - 2))
+    pin_mem = False if device.type == "mps" else (device.type == "cuda")
+    loader_kwargs: Dict[str, Any] = {
+        "batch_size": batch_size,
+        "num_workers": num_workers,
+        "pin_memory": pin_mem,
+    }
+    if num_workers > 0:
+        loader_kwargs["persistent_workers"] = True
+        loader_kwargs["prefetch_factor"] = 4
+
+    train_loader = DataLoader(train_ds, shuffle=True, **loader_kwargs)
+    val_loader = DataLoader(val_ds, shuffle=False, **loader_kwargs)
+    std_test_loader = DataLoader(std_test_ds, shuffle=False, **loader_kwargs)
+    dedup_test_loader = DataLoader(dedup_test_ds, shuffle=False, **loader_kwargs)
 
     # 2. Criteria: weighted disease CE + unweighted crop CE
     disease_weights = compute_class_weights(train_df, num_classes=len(class_names), method="inverse").to(device)
@@ -856,11 +880,13 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", default=False, help="Run 2-epoch dry run of the pipeline")
     parser.add_argument("--dry-run-samples-per-class", type=int, default=50, help="Train samples per class for dry run (default: 50)")
     parser.add_argument("--num-samples", type=int, default=None, help="Total sample count for dry run / smoke test (e.g. 64)")
-    parser.add_argument("--collapse-guard-min-epochs", type=int, default=10, help="Epoch threshold for collapse guard (default: 10)")
+    parser.add_argument("--collapse-guard-min-epochs", type=int, default=5, help="Epoch threshold for collapse guard (default: 5)")
     parser.add_argument("--force", action="store_true", default=False, help="Force rerun even if results exist")
     parser.add_argument("--seed", type=int, default=42, help="Deterministic random seed (default: 42)")
     parser.add_argument("--batch-size", type=int, default=64, help="Batch size for training and eval (default: 64)")
     parser.add_argument("--splits-dir", type=str, default="splits", help="Directory containing split CSVs")
+    parser.add_argument("--data-root", type=str, default="data", help="Root directory for dataset images (default: data)")
+    parser.add_argument("--epochs", type=int, default=None, help="Override epoch count for custom models")
     parser.add_argument("--results-dir", type=str, default="results", help="Directory for JSON results")
     parser.add_argument("--checkpoints-dir", type=str, default="checkpoints", help="Directory for checkpoints")
     parser.add_argument("--logs-dir", type=str, default="logs", help="Directory for training logs")
@@ -893,6 +919,7 @@ def main() -> None:
     print("=" * 80)
     print("STAGE A: MULTI-CROP LEAF DISEASE DIAGNOSIS ORCHESTRATOR")
     print(f"Seed: {args.seed} | Device: {device} | Dry Run: {args.dry_run} | Batch Size: {args.batch_size}")
+    print(f"Data Root: {args.data_root} | Splits: {splits_dir}")
     print(f"Results: {results_dir} | Checkpoints: {checkpoints_dir} | Logs: {logs_dir}")
     print("=" * 80)
 
@@ -931,19 +958,25 @@ def main() -> None:
         run_std_test_df = std_test_df
         run_dedup_test_df = dedup_test_df
 
-    # Filter models if requested
+    # Filter models if requested, preserving exact user-specified order
     models_to_run = STAGE_A_MODELS
     if args.models:
-        selected_names = [m.lower().replace("-", "_") for m in args.models]
-        models_to_run = [m for m in STAGE_A_MODELS if m["name"] in selected_names]
+        model_by_name = {m["name"]: m for m in STAGE_A_MODELS}
+        models_to_run = []
+        for m_name in args.models:
+            norm_m = m_name.lower().replace("-", "_")
+            if norm_m in model_by_name:
+                models_to_run.append(model_by_name[norm_m])
+            else:
+                raise ValueError(f"Unknown model '{m_name}'. Available models: {list(model_by_name.keys())}")
 
     for model_cfg in models_to_run:
         model_name = model_cfg["name"]
         run_id = f"{model_name}_seed{args.seed}"
         result_json = results_dir / f"{run_id}.json"
 
-        # Check resumability
-        if not args.force and is_run_completed(result_json, dry_run=args.dry_run):
+        # Check resumability: skip if results/*.json exists
+        if not args.force and result_json.exists():
             print(f"\n[SKIP] Run {run_id} already exists at {result_json}. Skipping to next...")
             continue
 
@@ -968,11 +1001,12 @@ def main() -> None:
                 checkpoints_dir=checkpoints_dir,
                 logs_dir=logs_dir,
                 results_dir=results_dir,
+                data_root=args.data_root,
                 dry_run=args.dry_run,
                 collapse_guard_min_epochs=args.collapse_guard_min_epochs,
             )
         elif model_cfg["type"] == "custom":
-            custom_ep = 2 if args.dry_run else 80
+            custom_ep = args.epochs if args.epochs is not None else (2 if args.dry_run else 80)
             run_custom_model(
                 model_name=model_name,
                 attention=model_cfg["attention"],
@@ -989,6 +1023,7 @@ def main() -> None:
                 checkpoints_dir=checkpoints_dir,
                 logs_dir=logs_dir,
                 results_dir=results_dir,
+                data_root=args.data_root,
                 dry_run=args.dry_run,
                 collapse_guard_min_epochs=args.collapse_guard_min_epochs,
             )

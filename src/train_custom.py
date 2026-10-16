@@ -348,6 +348,7 @@ def train_custom_net(
     dropout: float = 0.3,
     models_dir: str | Path = "models",
     results_dir: str | Path = "results",
+    data_root: str | Path = "data",
 ) -> Dict[str, Any]:
     """Train CustomNet from scratch and evaluate on the test split.
 
@@ -369,23 +370,24 @@ def train_custom_net(
 
     # ── DataLoaders ──────────────────────────────────────────────────────────
     all_tfms = get_strong_transforms(image_size=224)
-    train_ds = CropDiseaseDataset(train_df, transform=all_tfms["train"])
-    val_ds   = CropDiseaseDataset(val_df,   transform=all_tfms["val"])
-    test_ds  = CropDiseaseDataset(test_df,  transform=all_tfms["test"])
+    train_ds = CropDiseaseDataset(train_df, image_root=data_root, transform=all_tfms["train"])
+    val_ds   = CropDiseaseDataset(val_df,   image_root=data_root, transform=all_tfms["val"])
+    test_ds  = CropDiseaseDataset(test_df,  image_root=data_root, transform=all_tfms["test"])
 
-    num_workers = min(4, os.cpu_count() or 2)
-    train_loader = DataLoader(
-        train_ds, batch_size=batch_size, shuffle=True,
-        num_workers=num_workers, pin_memory=(device.type == "cuda"),
-    )
-    val_loader = DataLoader(
-        val_ds, batch_size=batch_size, shuffle=False,
-        num_workers=num_workers, pin_memory=(device.type == "cuda"),
-    )
-    test_loader = DataLoader(
-        test_ds, batch_size=batch_size, shuffle=False,
-        num_workers=num_workers, pin_memory=(device.type == "cuda"),
-    )
+    num_workers = min(8, max(1, (os.cpu_count() or 4) - 2))
+    pin_mem = False if device.type == "mps" else (device.type == "cuda")
+    loader_kwargs: Dict[str, Any] = {
+        "batch_size": batch_size,
+        "num_workers": num_workers,
+        "pin_memory": pin_mem,
+    }
+    if num_workers > 0:
+        loader_kwargs["persistent_workers"] = True
+        loader_kwargs["prefetch_factor"] = 4
+
+    train_loader = DataLoader(train_ds, shuffle=True, **loader_kwargs)
+    val_loader   = DataLoader(val_ds,   shuffle=False, **loader_kwargs)
+    test_loader  = DataLoader(test_ds,  shuffle=False, **loader_kwargs)
 
     # ── Loss functions ───────────────────────────────────────────────────────
     disease_weights = compute_class_weights(train_df, num_classes=12, method="inverse").to(device)
@@ -717,6 +719,10 @@ def main():
         help="1-epoch CPU smoke test on 10 imgs/class subset",
     )
     parser.add_argument(
+        "--data-root", type=str, default="data",
+        help="Root directory for dataset images (default: data)",
+    )
+    parser.add_argument(
         "--results-dir", type=str, default="results",
         help="Directory for evaluation JSONs and summary CSV (default: results)",
     )
@@ -744,7 +750,7 @@ def main():
     else:
         device = torch.device(args.device)
 
-    # ── Smoke test mode ───────────────────────────────────────────────────────
+    # ── Smoke test mode (writes only to dry directories) ───────────────────────
     if args.smoke_test:
         print(
             "[SMOKE TEST MODE] 1-epoch CPU run | 10 imgs/class train | 5 imgs/class val+test | "
@@ -771,7 +777,9 @@ def main():
             use_mixup=False,   # always off in smoke test
             use_cutmix=False,  # always off in smoke test
             early_stopping_patience=999,  # no early stop in 1-epoch test
-            results_dir=args.results_dir,
+            models_dir="checkpoints_dry",
+            results_dir="results_dry",
+            data_root=args.data_root,
         )
         print(
             f"\n[SMOKE TEST PASSED] "
@@ -802,6 +810,7 @@ def main():
             use_cutmix=args.cutmix,
             early_stopping_patience=args.patience,
             results_dir=args.results_dir,
+            data_root=args.data_root,
         )
 
     # ── Write merged summary ──────────────────────────────────────────────────
