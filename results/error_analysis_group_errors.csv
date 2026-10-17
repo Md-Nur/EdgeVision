@@ -1,0 +1,14 @@
+class_name,crop,total_groups,resnet18_err_groups,resnet18_err_pct,mobilenetv3_small_err_groups,mobilenetv3_small_err_pct,custom_none_err_groups,custom_none_err_pct,custom_se_err_groups,custom_se_err_pct
+Papaya___Anthracnose,Papaya,8,1,12.5,3,37.5,3,37.5,6,75.0
+Papaya___Healthy,Papaya,36,4,11.1,6,16.7,8,22.2,11,30.6
+Papaya___Leaf_Curl,Papaya,57,4,7.0,3,5.3,11,19.3,8,14.0
+Papaya___Ringspot,Papaya,37,7,18.9,5,13.5,8,21.6,8,21.6
+Potato___Early_Blight,Potato,379,6,1.6,7,1.8,9,2.4,10,2.6
+Potato___Healthy,Potato,284,0,0.0,0,0.0,0,0.0,0,0.0
+Potato___Late_Blight,Potato,377,11,2.9,5,1.3,14,3.7,10,2.7
+Potato___Leafroll_Virus,Potato,74,0,0.0,0,0.0,0,0.0,0,0.0
+Rice___Bacterial_Leaf_Blight,Rice,48,3,6.2,4,8.3,5,10.4,5,10.4
+Rice___Brown_Spot,Rice,52,2,3.8,3,5.8,3,5.8,1,1.9
+Rice___Healthy,Rice,38,0,0.0,0,0.0,0,0.0,0,0.0
+Rice___Tungro,Rice,74,4,5.4,4,5.4,5,6.8,3,4.1
+TOTAL / OVERALL,All,1464,42,2.9,40,2.7,66,4.5,62,4.2
