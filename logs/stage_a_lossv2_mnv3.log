@@ -1,0 +1,28 @@
+================================================================================
+STAGE A: MULTI-CROP LEAF DISEASE DIAGNOSIS ORCHESTRATOR
+Seed: 42 | Device: mps | Dry Run: False | Batch Size: 64
+Data Root: data_cache | Splits: splits_cache
+Results: results | Checkpoints: checkpoints | Logs: logs
+================================================================================
+Classes (12): ['Papaya___Anthracnose', 'Papaya___Healthy', 'Papaya___Leaf_Curl', 'Papaya___Ringspot', 'Potato___Early_Blight', 'Potato___Healthy', 'Potato___Late_Blight', 'Potato___Leafroll_Virus', 'Rice___Bacterial_Leaf_Blight', 'Rice___Brown_Spot', 'Rice___Healthy', 'Rice___Tungro']
+Data Splits -> Train: 15,611 | Val: 3,291 | Std Test: 3,256 | Dedup Test: 2,864
+
+================================================================================
+RUNNING PRETRAINED: mobilenetv3_small (mobilenetv3_small_100) | Run ID: mobilenetv3_small_seed42_lossv2 | Loss: v2
+Device: mps | Dry Run: False | Batch Size: 64
+Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
+================================================================================
+
+--- Phase 1: Head Only Training (3 epochs, lr=1e-3) ---
+[P1 Ep 1/3 (Total Ep 1)] Train Loss: 2.2816 | Val Loss: 1.1813 | Val Acc: 0.8341 | Val Macro-F1: 0.8071 [BEST]
+[P1 Ep 2/3 (Total Ep 2)] Train Loss: 1.3992 | Val Loss: 1.0120 | Val Acc: 0.8897 | Val Macro-F1: 0.8741 [BEST]
+[P1 Ep 3/3 (Total Ep 3)] Train Loss: 1.1947 | Val Loss: 0.9138 | Val Acc: 0.9164 | Val Macro-F1: 0.9005 [BEST]
+
+--- Phase 2: Fine-Tuning All Layers (30 epochs, lr=1e-4, Cosine Decay) ---
+[P2 Ep 01/30 (Total Ep 04)] Train Loss: 0.9646 | Val Loss: 0.7443 | Val Acc: 0.9511 | Val Macro-F1: 0.9317 | LR: 9.97e-05 [BEST]
+[P2 Ep 02/30 (Total Ep 05)] Train Loss: 0.7443 | Val Loss: 0.7297 | Val Acc: 0.9462 | Val Macro-F1: 0.9389 | LR: 9.89e-05 [BEST]
+[P2 Ep 03/30 (Total Ep 06)] Train Loss: 0.6983 | Val Loss: 0.6878 | Val Acc: 0.9593 | Val Macro-F1: 0.9549 | LR: 9.76e-05 [BEST]
+[P2 Ep 04/30 (Total Ep 07)] Train Loss: 0.6657 | Val Loss: 0.6821 | Val Acc: 0.9617 | Val Macro-F1: 0.9383 | LR: 9.57e-05
+[P2 Ep 05/30 (Total Ep 08)] Train Loss: 0.6364 | Val Loss: 0.6215 | Val Acc: 0.9748 | Val Macro-F1: 0.9715 | LR: 9.34e-05 [BEST]
+[P2 Ep 06/30 (Total Ep 09)] Train Loss: 0.6193 | Val Loss: 0.6173 | Val Acc: 0.9736 | Val Macro-F1: 0.9664 | LR: 9.05e-05
+[P2 Ep 07/30 (Total Ep 10)] Train Loss: 0.5992 | Val Loss: 0.6409 | Val Acc: 0.9654 | Val Macro-F1: 0.9536 | LR: 8.73e-05

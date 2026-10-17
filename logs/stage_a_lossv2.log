@@ -213,3 +213,20 @@ Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
 [P2 Ep 07/30 (Total Ep 10)] Train Loss: 0.6106 | Val Loss: 0.6233 | Val Acc: 0.9714 | Val Macro-F1: 0.9664 | LR: 8.73e-05
 [P2 Ep 08/30 (Total Ep 11)] Train Loss: 0.5946 | Val Loss: 0.6178 | Val Acc: 0.9720 | Val Macro-F1: 0.9698 | LR: 8.36e-05 [BEST]
 [P2 Ep 09/30 (Total Ep 12)] Train Loss: 0.5821 | Val Loss: 0.6153 | Val Acc: 0.9763 | Val Macro-F1: 0.9675 | LR: 7.96e-05
+[P2 Ep 10/30 (Total Ep 13)] Train Loss: 0.5768 | Val Loss: 0.6206 | Val Acc: 0.9684 | Val Macro-F1: 0.9576 | LR: 7.52e-05
+[P2 Ep 11/30 (Total Ep 14)] Train Loss: 0.5697 | Val Loss: 0.6173 | Val Acc: 0.9672 | Val Macro-F1: 0.9647 | LR: 7.06e-05
+[P2 Ep 12/30 (Total Ep 15)] Train Loss: 0.5611 | Val Loss: 0.6066 | Val Acc: 0.9687 | Val Macro-F1: 0.9634 | LR: 6.58e-05
+[P2 Ep 13/30 (Total Ep 16)] Train Loss: 0.5639 | Val Loss: 0.6040 | Val Acc: 0.9733 | Val Macro-F1: 0.9672 | LR: 6.08e-05
+[P2 Ep 14/30 (Total Ep 17)] Train Loss: 0.5533 | Val Loss: 0.6127 | Val Acc: 0.9666 | Val Macro-F1: 0.9604 | LR: 5.57e-05 -> STOPPED_EARLY: Early stopping patience (6 epochs) reached in Phase 2
+
+[EARLY STOPPING TRIGGERED]: Early stopping patience (6 epochs) reached in Phase 2
+
+[LOG SAVED]: Per-epoch logs written to: logs/mobilenetv3_small_seed42_lossv2.csv
+
+--- Evaluating Best Checkpoint on Test Splits ---
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f1e83f80 (most recent call first):
+  <no Python frame>
