@@ -1,0 +1,17 @@
+epoch,phase,train_loss,val_loss,val_macro_f1,val_accuracy,lr,is_best,early_stop_marked
+1,phase1,1.5154,1.0895,0.8324,0.8724,0.001,True,False
+2,phase1,1.0332,0.9238,0.8567,0.8921,0.001,True,False
+3,phase1,0.9558,0.8761,0.8756,0.9079,0.001,True,False
+4,phase2,0.8385,0.7225,0.9352,0.9459,9.973e-05,True,False
+5,phase2,0.7425,0.6864,0.9488,0.955,9.892e-05,True,False
+6,phase2,0.6975,0.6571,0.9654,0.969,9.758e-05,True,False
+7,phase2,0.6614,0.6399,0.965,0.9705,9.572e-05,False,False
+8,phase2,0.6434,0.6314,0.9696,0.9748,9.337e-05,True,False
+9,phase2,0.6287,0.6204,0.9676,0.9742,9.055e-05,False,False
+10,phase2,0.615,0.6126,0.9736,0.9763,8.729e-05,True,False
+11,phase2,0.6048,0.6106,0.97,0.976,8.362e-05,False,False
+12,phase2,0.5972,0.6074,0.9701,0.976,7.96e-05,False,False
+13,phase2,0.5905,0.6025,0.9722,0.9781,7.525e-05,False,False
+14,phase2,0.5879,0.6074,0.9733,0.9766,7.063e-05,False,False
+15,phase2,0.5821,0.6015,0.9693,0.9775,6.58e-05,False,False
+16,phase2,0.5774,0.6015,0.97,0.9769,6.079e-05,False,STOPPED_EARLY: Early stopping patience (6 epochs) reached in Phase 2

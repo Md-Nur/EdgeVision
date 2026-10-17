@@ -342,15 +342,17 @@ def run_pretrained_model(
     data_root: str = "data",
     dry_run: bool = False,
     collapse_guard_min_epochs: int = 5,
+    loss_version: str = "v2",
 ) -> Dict[str, Any]:
     """Train and evaluate a pretrained baseline model."""
-    run_id = f"{model_name}_seed{seed}"
+    loss_suffix = f"_loss{loss_version}"
+    run_id = f"{model_name}_seed{seed}{loss_suffix}"
     ckpt_path = checkpoints_dir / f"{run_id}_best.pth"
     log_csv_path = logs_dir / f"{run_id}.csv"
     result_json_path = results_dir / f"{run_id}.json"
 
     print("\n" + "=" * 80)
-    print(f"RUNNING PRETRAINED: {model_name} ({arch}) | Run ID: {run_id}")
+    print(f"RUNNING PRETRAINED: {model_name} ({arch}) | Run ID: {run_id} | Loss: {loss_version}")
     print(f"Device: {device} | Dry Run: {dry_run} | Batch Size: {batch_size}")
     print(f"Phase 1: {phase1_epochs} epochs | Phase 2: {phase2_epochs} epochs | ES Patience: {early_stopping_patience}")
     print("=" * 80)
@@ -380,10 +382,12 @@ def run_pretrained_model(
 
     # 2. Loss with inverse class weights & label smoothing
     class_weights = compute_class_weights(train_df, num_classes=len(class_names), method="inverse").to(device)
-    criterion = get_loss_function(loss_type="weighted_ce", class_weights=class_weights, label_smoothing=0.1)
+    loss_type = "weighted_ce_v2" if loss_version == "v2" else "weighted_ce_v1"
+    criterion = get_loss_function(loss_type=loss_type, class_weights=class_weights, label_smoothing=0.1)
 
     # 3. Model creation
     model = create_model(backbone_name=arch, num_classes=len(class_names), pretrained=True, dropout=0.3).to(device)
+
 
     best_val_macro_f1 = -1.0
     patience_counter = 0
@@ -611,6 +615,8 @@ def run_pretrained_model(
         "model": model_name,
         "arch": arch,
         "type": "pretrained",
+        "loss_version": loss_version,
+        "loss_type": loss_type,
         "seed": seed,
         "dry_run": dry_run,
         "status": "COLLAPSED" if is_collapsed else "COMPLETED",
@@ -664,15 +670,17 @@ def run_custom_model(
     data_root: str = "data",
     dry_run: bool = False,
     collapse_guard_min_epochs: int = 5,
+    loss_version: str = "v2",
 ) -> Dict[str, Any]:
     """Train and evaluate a CustomNet model from scratch."""
-    run_id = f"{model_name}_seed{seed}"
+    loss_suffix = f"_loss{loss_version}"
+    run_id = f"{model_name}_seed{seed}{loss_suffix}"
     ckpt_path = checkpoints_dir / f"{run_id}_best.pth"
     log_csv_path = logs_dir / f"{run_id}.csv"
     result_json_path = results_dir / f"{run_id}.json"
 
     print("\n" + "=" * 80)
-    print(f"RUNNING CUSTOM FROM SCRATCH: {model_name} (attention={attention}) | Run ID: {run_id}")
+    print(f"RUNNING CUSTOM FROM SCRATCH: {model_name} (attention={attention}) | Run ID: {run_id} | Loss: {loss_version}")
     print(f"Device: {device} | Dry Run: {dry_run} | Batch Size: {batch_size} | Epochs: {num_epochs}")
     print(f"Scheduler: CosineAnnealingLR (lr={base_lr}) | Label Smoothing: 0.1 | MixUp/CutMix: OFF")
     print("=" * 80)
@@ -702,11 +710,13 @@ def run_custom_model(
 
     # 2. Criteria: weighted disease CE + unweighted crop CE
     disease_weights = compute_class_weights(train_df, num_classes=len(class_names), method="inverse").to(device)
-    disease_criterion = get_loss_function(loss_type="weighted_ce", class_weights=disease_weights, label_smoothing=0.1)
+    loss_type = "weighted_ce_v2" if loss_version == "v2" else "weighted_ce_v1"
+    disease_criterion = get_loss_function(loss_type=loss_type, class_weights=disease_weights, label_smoothing=0.1)
     crop_criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
 
     # 3. Model creation (from scratch, random init)
     model = build_custom_net(attention=attention, dropout=0.3).to(device)
+
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=base_lr, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=1e-6)
@@ -843,6 +853,8 @@ def run_custom_model(
         "model": model_name,
         "attention": attention,
         "type": "custom",
+        "loss_version": loss_version,
+        "loss_type": loss_type,
         "seed": seed,
         "dry_run": dry_run,
         "status": "COLLAPSED" if is_collapsed else "COMPLETED",
@@ -892,6 +904,7 @@ def main() -> None:
     parser.add_argument("--logs-dir", type=str, default="logs", help="Directory for training logs")
     parser.add_argument("--reports-dir", type=str, default="reports", help="Directory for report artifacts")
     parser.add_argument("--models", nargs="+", default=None, help="Subset of models to run (default: all 7 Stage A models)")
+    parser.add_argument("--loss-version", choices=["v1", "v2"], default="v2", help="Loss implementation version: 'v1' (legacy PyTorch weighted CE) or 'v2' (unweighted label smoothing with sample weighting). Default: v2")
     parser.add_argument("--device", type=str, default=None, help="Compute device ('cpu', 'mps', 'cuda'). Defaults to auto-detect.")
     args = parser.parse_args()
 
@@ -972,13 +985,19 @@ def main() -> None:
 
     for model_cfg in models_to_run:
         model_name = model_cfg["name"]
-        run_id = f"{model_name}_seed{args.seed}"
+        loss_suffix = f"_loss{args.loss_version}"
+        run_id = f"{model_name}_seed{args.seed}{loss_suffix}"
         result_json = results_dir / f"{run_id}.json"
+        legacy_v1_json = results_dir / f"{model_name}_seed{args.seed}.json"
 
         # Check resumability: skip if results/*.json exists
-        if not args.force and result_json.exists():
-            print(f"\n[SKIP] Run {run_id} already exists at {result_json}. Skipping to next...")
-            continue
+        if not args.force:
+            if result_json.exists():
+                print(f"\n[SKIP] Run {run_id} already exists at {result_json}. Skipping to next...")
+                continue
+            elif args.loss_version == "v1" and legacy_v1_json.exists():
+                print(f"\n[SKIP] Legacy v1 run already exists at {legacy_v1_json}. Skipping to next...")
+                continue
 
         if model_cfg["type"] == "pretrained":
             p1_ep = 1 if args.dry_run else 3
@@ -1004,6 +1023,7 @@ def main() -> None:
                 data_root=args.data_root,
                 dry_run=args.dry_run,
                 collapse_guard_min_epochs=args.collapse_guard_min_epochs,
+                loss_version=args.loss_version,
             )
         elif model_cfg["type"] == "custom":
             custom_ep = args.epochs if args.epochs is not None else (2 if args.dry_run else 80)
@@ -1026,6 +1046,7 @@ def main() -> None:
                 data_root=args.data_root,
                 dry_run=args.dry_run,
                 collapse_guard_min_epochs=args.collapse_guard_min_epochs,
+                loss_version=args.loss_version,
             )
 
     # Aggregate all completed results

@@ -150,26 +150,59 @@ def plot_and_save_confusion_matrix(
     plt.close()
 
 
-def find_result_file(model_name: str, results_dir: Path) -> Optional[Path]:
-    """Find the result JSON for a given model (e.g. resnet18_seed42.json or resnet18.json)."""
-    candidates = [
-        results_dir / f"{model_name}_seed42.json",
-        results_dir / f"{model_name}.json",
-    ]
-    # Check normalized aliases
+def find_result_files(
+    model_name: str,
+    results_dir: Path,
+    loss_version: Optional[str] = None,
+) -> List[Path]:
+    """Find all matching result JSONs for a given model and optional loss_version."""
+    candidates = []
     clean = model_name.replace("-", "_")
-    candidates.append(results_dir / f"{clean}_seed42.json")
-    candidates.append(results_dir / f"{clean}.json")
+    if loss_version:
+        candidates.extend([
+            results_dir / f"{model_name}_seed42_loss{loss_version}.json",
+            results_dir / f"{clean}_seed42_loss{loss_version}.json",
+        ])
+        if loss_version == "v1":
+            candidates.extend([
+                results_dir / f"{model_name}_seed42.json",
+                results_dir / f"{clean}_seed42.json",
+            ])
+    else:
+        # Check versioned first, then unversioned legacy
+        candidates.extend([
+            results_dir / f"{model_name}_seed42_lossv2.json",
+            results_dir / f"{clean}_seed42_lossv2.json",
+            results_dir / f"{model_name}_seed42_lossv1.json",
+            results_dir / f"{clean}_seed42_lossv1.json",
+            results_dir / f"{model_name}_seed42.json",
+            results_dir / f"{clean}_seed42.json",
+            results_dir / f"{model_name}.json",
+            results_dir / f"{clean}.json",
+        ])
 
+    found: List[Path] = []
     for c in candidates:
-        if c.exists():
-            return c
+        if c.exists() and c not in found:
+            found.append(c)
 
-    # Fuzzy match by prefix
-    for p in results_dir.glob(f"{model_name}*.json"):
-        return p
+    if not found:
+        # Fuzzy match by prefix
+        for p in sorted(results_dir.glob(f"{model_name}*.json")):
+            if p not in found:
+                found.append(p)
 
-    return None
+    return found
+
+
+def find_result_file(
+    model_name: str,
+    results_dir: Path,
+    loss_version: Optional[str] = None,
+) -> Optional[Path]:
+    """Find the primary result JSON for a given model (e.g. resnet18_seed42_lossv2.json)."""
+    files = find_result_files(model_name, results_dir, loss_version)
+    return files[0] if files else None
 
 
 def aggregate_stage_a(
@@ -177,6 +210,7 @@ def aggregate_stage_a(
     output_table_path: str | Path = "results/stage_a_table.csv",
     reports_dir: str | Path = "reports",
     logs_dir: str | Path = "logs",
+    loss_version: Optional[str] = None,
     n_bootstraps: int = 1000,
     seed: int = 42,
 ) -> pd.DataFrame:
@@ -203,135 +237,142 @@ def aggregate_stage_a(
     print("\n" + "=" * 80)
     print("STAGE A: AGGREGATING RESULTS & COMPUTING GROUP-BOOTSTRAP CIs")
     print(f"Results Dir: {results_dir} | Output: {output_table_path} | Reports: {reports_dir}")
+    if loss_version:
+        print(f"Filtered by Loss Version: {loss_version}")
     print("=" * 80)
 
     # Process models in canonical order
     for model_name in STAGE_A_CANONICAL_MODELS:
-        json_file = find_result_file(model_name, results_dir)
-        if not json_file:
+        json_files = find_result_files(model_name, results_dir, loss_version=loss_version)
+        if not json_files:
             print(f"[WARNING] No result JSON found for model: {model_name}")
             continue
 
-        with open(json_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        for json_file in json_files:
+            with open(json_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
 
-        # Refuse/skip if marked as dry_run inside results
-        if data.get("dry_run", False):
-            print(f"[WARNING] Run '{model_name}' has dry_run=True. Aggregator skips dry-run files.")
-            continue
+            # Refuse/skip if marked as dry_run inside results
+            if data.get("dry_run", False):
+                print(f"[WARNING] Run '{json_file.stem}' has dry_run=True. Aggregator skips dry-run files.")
+                continue
 
-        # Check logged epochs: warn if fewer than 10 epochs logged
-        epochs_logged = data.get("epochs_logged", data.get("epochs_run", None))
-        if epochs_logged is None:
-            # Check corresponding CSV in logs_dir
-            run_id = json_file.stem
-            candidates = [
-                logs_dir / f"{run_id}.csv",
-                logs_dir / f"{model_name}_seed{seed}.csv",
-                logs_dir / f"{model_name}.csv",
-            ]
-            for cand in candidates:
-                if cand.exists():
-                    try:
-                        csv_df = pd.read_csv(cand)
-                        epochs_logged = len(csv_df)
-                        break
-                    except Exception:
-                        pass
+            loss_ver = data.get("loss_version", "v2" if "lossv2" in json_file.stem else "v1")
 
-        if epochs_logged is not None and epochs_logged < 10:
-            print(f"[WARNING] Model '{model_name}' in '{results_dir}' has fewer than 10 epochs logged ({epochs_logged} epochs).")
-        elif epochs_logged is None:
-            print(f"[WARNING] Model '{model_name}' in '{results_dir}' has unknown epoch count (no epochs logged in JSON or logs/).")
+            # Check logged epochs: warn if fewer than 10 epochs logged
+            epochs_logged = data.get("epochs_logged", data.get("epochs_run", None))
+            if epochs_logged is None:
+                # Check corresponding CSV in logs_dir
+                run_id = json_file.stem
+                candidates = [
+                    logs_dir / f"{run_id}.csv",
+                    logs_dir / f"{model_name}_seed{seed}.csv",
+                    logs_dir / f"{model_name}.csv",
+                ]
+                for cand in candidates:
+                    if cand.exists():
+                        try:
+                            csv_df = pd.read_csv(cand)
+                            epochs_logged = len(csv_df)
+                            break
+                        except Exception:
+                            pass
 
-        # Standard test split metrics
-        std_test = data.get("standard_test", {})
-        if not std_test:
-            # Fallback if old flat schema
-            std_test = data
+            if epochs_logged is not None and epochs_logged < 10:
+                print(f"[WARNING] Model '{model_name}' ({loss_ver}) in '{results_dir}' has fewer than 10 epochs logged ({epochs_logged} epochs).")
+            elif epochs_logged is None:
+                print(f"[WARNING] Model '{model_name}' ({loss_ver}) in '{results_dir}' has unknown epoch count (no epochs logged in JSON or logs/).")
 
-        # Dedup test split metrics
-        dedup_test = data.get("dedup_test", {})
+            # Standard test split metrics
+            std_test = data.get("standard_test", {})
+            if not std_test:
+                # Fallback if old flat schema
+                std_test = data
 
-        std_macro_f1 = std_test.get("macro_f1", 0.0)
-        std_acc = std_test.get("accuracy", 0.0)
-        dedup_macro_f1 = dedup_test.get("macro_f1", 0.0) if dedup_test else std_macro_f1
-        dedup_acc = dedup_test.get("accuracy", 0.0) if dedup_test else std_acc
+            # Dedup test split metrics
+            dedup_test = data.get("dedup_test", {})
 
-        # Group-bootstrap CIs
-        # Dedup split CI
-        if dedup_test and "y_true" in dedup_test and "y_pred" in dedup_test and "group_ids" in dedup_test:
-            _, dedup_ci_l, dedup_ci_u = compute_group_bootstrap_ci(
-                dedup_test["y_true"],
-                dedup_test["y_pred"],
-                dedup_test["group_ids"],
-                n_bootstraps=n_bootstraps,
-                seed=seed,
-            )
-            dedup_ci_str = f"[{dedup_ci_l:.4f}, {dedup_ci_u:.4f}]"
-        else:
-            dedup_ci_str = "N/A"
+            std_macro_f1 = std_test.get("macro_f1", 0.0)
+            std_acc = std_test.get("accuracy", 0.0)
+            dedup_macro_f1 = dedup_test.get("macro_f1", 0.0) if dedup_test else std_macro_f1
+            dedup_acc = dedup_test.get("accuracy", 0.0) if dedup_test else std_acc
 
-        # Standard split CI
-        if "y_true" in std_test and "y_pred" in std_test and "group_ids" in std_test:
-            _, std_ci_l, std_ci_u = compute_group_bootstrap_ci(
-                std_test["y_true"],
-                std_test["y_pred"],
-                std_test["group_ids"],
-                n_bootstraps=n_bootstraps,
-                seed=seed,
-            )
-            std_ci_str = f"[{std_ci_l:.4f}, {std_ci_u:.4f}]"
-        else:
-            std_ci_str = "N/A"
+            # Group-bootstrap CIs
+            # Dedup split CI
+            if dedup_test and "y_true" in dedup_test and "y_pred" in dedup_test and "group_ids" in dedup_test:
+                _, dedup_ci_l, dedup_ci_u = compute_group_bootstrap_ci(
+                    dedup_test["y_true"],
+                    dedup_test["y_pred"],
+                    dedup_test["group_ids"],
+                    n_bootstraps=n_bootstraps,
+                    seed=seed,
+                )
+                dedup_ci_str = f"[{dedup_ci_l:.4f}, {dedup_ci_u:.4f}]"
+            else:
+                dedup_ci_str = "N/A"
 
-        # Model efficiency
-        params = data.get("parameter_count", data.get("params", 0))
-        size_mb = data.get("model_size_mb", data.get("size_mb", 0.0))
-        gflops = data.get("gflops", 0.0)
-        latency = data.get("cpu_latency_ms", data.get("latency", 0.0))
+            # Standard split CI
+            if "y_true" in std_test and "y_pred" in std_test and "group_ids" in std_test:
+                _, std_ci_l, std_ci_u = compute_group_bootstrap_ci(
+                    std_test["y_true"],
+                    std_test["y_pred"],
+                    std_test["group_ids"],
+                    n_bootstraps=n_bootstraps,
+                    seed=seed,
+                )
+                std_ci_str = f"[{std_ci_l:.4f}, {std_ci_u:.4f}]"
+            else:
+                std_ci_str = "N/A"
 
-        # Save confusion matrix PNG into reports/
-        class_names = data.get("class_names")
-        if not class_names and "per_class" in std_test:
-            class_names = list(std_test["per_class"].keys())
+            # Model efficiency
+            params = data.get("parameter_count", data.get("params", 0))
+            size_mb = data.get("model_size_mb", data.get("size_mb", 0.0))
+            gflops = data.get("gflops", 0.0)
+            latency = data.get("cpu_latency_ms", data.get("latency", 0.0))
 
-        cm = std_test.get("confusion_matrix")
-        if cm and class_names:
-            cm_png = reports_dir / f"{model_name}_confusion_matrix.png"
-            plot_and_save_confusion_matrix(
-                cm=np.array(cm),
-                class_names=class_names,
-                model_name=model_name,
-                output_path=cm_png,
-                title_suffix="Standard Test Split",
-            )
+            # Save confusion matrix PNG into reports/
+            class_names = data.get("class_names")
+            if not class_names and "per_class" in std_test:
+                class_names = list(std_test["per_class"].keys())
 
-        # Also dedup CM if present
-        if dedup_test and "confusion_matrix" in dedup_test and class_names:
-            dedup_cm_png = reports_dir / f"{model_name}_dedup_confusion_matrix.png"
-            plot_and_save_confusion_matrix(
-                cm=np.array(dedup_test["confusion_matrix"]),
-                class_names=class_names,
-                model_name=model_name,
-                output_path=dedup_cm_png,
-                title_suffix="Dedup Test Split",
-            )
+            cm_stem = f"{model_name}_{loss_ver}" if ("loss" in json_file.stem or len(json_files) > 1) else model_name
+            cm = std_test.get("confusion_matrix")
+            if cm and class_names:
+                cm_png = reports_dir / f"{cm_stem}_confusion_matrix.png"
+                plot_and_save_confusion_matrix(
+                    cm=np.array(cm),
+                    class_names=class_names,
+                    model_name=f"{model_name} ({loss_ver})",
+                    output_path=cm_png,
+                    title_suffix=f"Standard Test Split ({loss_ver})",
+                )
 
-        row = {
-            "model": model_name,
-            "macro-F1 (dedup test)": round(float(dedup_macro_f1), 4),
-            "macro-F1 (dedup test) 95% CI": dedup_ci_str,
-            "macro-F1 (standard test)": round(float(std_macro_f1), 4),
-            "macro-F1 (standard test) 95% CI": std_ci_str,
-            "accuracy": round(float(std_acc), 4),
-            "accuracy (dedup)": round(float(dedup_acc), 4),
-            "params": int(params),
-            "size_MB": round(float(size_mb), 2),
-            "GFLOPs": round(float(gflops), 3),
-            "latency": round(float(latency), 2),
-        }
-        rows.append(row)
+            # Also dedup CM if present
+            if dedup_test and "confusion_matrix" in dedup_test and class_names:
+                dedup_cm_png = reports_dir / f"{cm_stem}_dedup_confusion_matrix.png"
+                plot_and_save_confusion_matrix(
+                    cm=np.array(dedup_test["confusion_matrix"]),
+                    class_names=class_names,
+                    model_name=f"{model_name} ({loss_ver})",
+                    output_path=dedup_cm_png,
+                    title_suffix=f"Dedup Test Split ({loss_ver})",
+                )
+
+            row = {
+                "model": model_name,
+                "loss_version": loss_ver,
+                "macro-F1 (dedup test)": round(float(dedup_macro_f1), 4),
+                "macro-F1 (dedup test) 95% CI": dedup_ci_str,
+                "macro-F1 (standard test)": round(float(std_macro_f1), 4),
+                "macro-F1 (standard test) 95% CI": std_ci_str,
+                "accuracy": round(float(std_acc), 4),
+                "accuracy (dedup)": round(float(dedup_acc), 4),
+                "params": int(params),
+                "size_MB": round(float(size_mb), 2),
+                "GFLOPs": round(float(gflops), 3),
+                "latency": round(float(latency), 2),
+            }
+            rows.append(row)
 
     if not rows:
         print("[ERROR] No model rows aggregated. Check results/ directory.")
@@ -347,6 +388,7 @@ def aggregate_stage_a(
     print("=" * 100)
     display_cols = [
         "model",
+        "loss_version",
         "macro-F1 (dedup test)",
         "macro-F1 (dedup test) 95% CI",
         "macro-F1 (standard test)",
@@ -369,6 +411,7 @@ def main() -> None:
     parser.add_argument("--output-table", type=str, default="results/stage_a_table.csv", help="Output CSV table path")
     parser.add_argument("--reports-dir", type=str, default="reports", help="Directory for confusion matrix PNGs")
     parser.add_argument("--logs-dir", type=str, default="logs", help="Directory for per-epoch training CSV logs")
+    parser.add_argument("--loss-version", type=str, choices=["v1", "v2"], default=None, help="Filter results by loss version (v1 or v2)")
     parser.add_argument("--n-bootstraps", type=int, default=1000, help="Number of bootstrap resamples (default: 1000)")
     parser.add_argument("--seed", type=int, default=42, help="Bootstrap random seed (default: 42)")
     args = parser.parse_args()
@@ -378,6 +421,7 @@ def main() -> None:
         output_table_path=args.output_table,
         reports_dir=args.reports_dir,
         logs_dir=args.logs_dir,
+        loss_version=args.loss_version,
         n_bootstraps=args.n_bootstraps,
         seed=args.seed,
     )

@@ -1,0 +1,215 @@
+================================================================================
+STAGE A: MULTI-CROP LEAF DISEASE DIAGNOSIS ORCHESTRATOR
+Seed: 42 | Device: mps | Dry Run: False | Batch Size: 64
+Data Root: data_cache | Splits: splits_cache
+Results: results | Checkpoints: checkpoints | Logs: logs
+================================================================================
+Classes (12): ['Papaya___Anthracnose', 'Papaya___Healthy', 'Papaya___Leaf_Curl', 'Papaya___Ringspot', 'Potato___Early_Blight', 'Potato___Healthy', 'Potato___Late_Blight', 'Potato___Leafroll_Virus', 'Rice___Bacterial_Leaf_Blight', 'Rice___Brown_Spot', 'Rice___Healthy', 'Rice___Tungro']
+Data Splits -> Train: 15,611 | Val: 3,291 | Std Test: 3,256 | Dedup Test: 2,864
+
+================================================================================
+RUNNING CUSTOM FROM SCRATCH: custom_none (attention=none) | Run ID: custom_none_seed42_lossv2 | Loss: v2
+Device: mps | Dry Run: False | Batch Size: 64 | Epochs: 60
+Scheduler: CosineAnnealingLR (lr=0.001) | Label Smoothing: 0.1 | MixUp/CutMix: OFF
+================================================================================
+[CustomNet Architecture]: attention=none | Params: 642,159 (Target < 1,500,000: PASS)
+[Custom Ep 01/60] Train Loss: 1.5777 | Val Loss: 1.1205 | Val Acc: 0.7514 | Val Macro-F1: 0.6907 | Crop Acc: 0.9723 | LR: 9.99e-04 [BEST]
+[Custom Ep 02/60] Train Loss: 1.1961 | Val Loss: 0.9151 | Val Acc: 0.8490 | Val Macro-F1: 0.8055 | Crop Acc: 0.9900 | LR: 9.97e-04 [BEST]
+[Custom Ep 03/60] Train Loss: 1.0556 | Val Loss: 0.9802 | Val Acc: 0.8180 | Val Macro-F1: 0.8049 | Crop Acc: 0.9875 | LR: 9.94e-04
+[Custom Ep 04/60] Train Loss: 0.9820 | Val Loss: 0.8201 | Val Acc: 0.9034 | Val Macro-F1: 0.8732 | Crop Acc: 0.9909 | LR: 9.89e-04 [BEST]
+[Custom Ep 05/60] Train Loss: 0.9426 | Val Loss: 0.7671 | Val Acc: 0.9189 | Val Macro-F1: 0.8918 | Crop Acc: 0.9918 | LR: 9.83e-04 [BEST]
+[Custom Ep 06/60] Train Loss: 0.8946 | Val Loss: 0.8162 | Val Acc: 0.8921 | Val Macro-F1: 0.8677 | Crop Acc: 0.9827 | LR: 9.76e-04
+[Custom Ep 07/60] Train Loss: 0.8617 | Val Loss: 0.7569 | Val Acc: 0.9140 | Val Macro-F1: 0.8920 | Crop Acc: 0.9942 | LR: 9.67e-04 [BEST]
+[Custom Ep 08/60] Train Loss: 0.8478 | Val Loss: 0.7812 | Val Acc: 0.9131 | Val Macro-F1: 0.9045 | Crop Acc: 0.9948 | LR: 9.57e-04 [BEST]
+[Custom Ep 09/60] Train Loss: 0.8139 | Val Loss: 0.7498 | Val Acc: 0.9140 | Val Macro-F1: 0.8977 | Crop Acc: 0.9939 | LR: 9.46e-04
+[Custom Ep 10/60] Train Loss: 0.8037 | Val Loss: 0.7517 | Val Acc: 0.9265 | Val Macro-F1: 0.9247 | Crop Acc: 0.9936 | LR: 9.33e-04 [BEST]
+[Custom Ep 11/60] Train Loss: 0.7762 | Val Loss: 0.7111 | Val Acc: 0.9319 | Val Macro-F1: 0.9219 | Crop Acc: 0.9948 | LR: 9.19e-04
+[Custom Ep 12/60] Train Loss: 0.7646 | Val Loss: 0.7180 | Val Acc: 0.9298 | Val Macro-F1: 0.9218 | Crop Acc: 0.9951 | LR: 9.05e-04
+[Custom Ep 13/60] Train Loss: 0.7530 | Val Loss: 0.7030 | Val Acc: 0.9310 | Val Macro-F1: 0.9210 | Crop Acc: 0.9970 | LR: 8.89e-04
+[Custom Ep 14/60] Train Loss: 0.7491 | Val Loss: 0.7118 | Val Acc: 0.9274 | Val Macro-F1: 0.9196 | Crop Acc: 0.9960 | LR: 8.72e-04
+[Custom Ep 15/60] Train Loss: 0.7472 | Val Loss: 0.7040 | Val Acc: 0.9338 | Val Macro-F1: 0.9337 | Crop Acc: 0.9973 | LR: 8.54e-04 [BEST]
+[Custom Ep 16/60] Train Loss: 0.7279 | Val Loss: 0.7012 | Val Acc: 0.9368 | Val Macro-F1: 0.9310 | Crop Acc: 0.9982 | LR: 8.35e-04
+[Custom Ep 17/60] Train Loss: 0.7232 | Val Loss: 0.6912 | Val Acc: 0.9374 | Val Macro-F1: 0.9350 | Crop Acc: 0.9973 | LR: 8.15e-04 [BEST]
+[Custom Ep 18/60] Train Loss: 0.7161 | Val Loss: 0.6687 | Val Acc: 0.9465 | Val Macro-F1: 0.9344 | Crop Acc: 0.9967 | LR: 7.94e-04
+[Custom Ep 19/60] Train Loss: 0.7038 | Val Loss: 0.6621 | Val Acc: 0.9486 | Val Macro-F1: 0.9447 | Crop Acc: 0.9970 | LR: 7.73e-04 [BEST]
+[Custom Ep 20/60] Train Loss: 0.6962 | Val Loss: 0.6588 | Val Acc: 0.9502 | Val Macro-F1: 0.9427 | Crop Acc: 0.9973 | LR: 7.50e-04
+[Custom Ep 21/60] Train Loss: 0.6969 | Val Loss: 0.6692 | Val Acc: 0.9480 | Val Macro-F1: 0.9385 | Crop Acc: 0.9973 | LR: 7.27e-04
+[Custom Ep 22/60] Train Loss: 0.6947 | Val Loss: 0.6576 | Val Acc: 0.9572 | Val Macro-F1: 0.9547 | Crop Acc: 0.9973 | LR: 7.04e-04 [BEST]
+[Custom Ep 23/60] Train Loss: 0.6803 | Val Loss: 0.6592 | Val Acc: 0.9547 | Val Macro-F1: 0.9504 | Crop Acc: 0.9979 | LR: 6.80e-04
+[Custom Ep 24/60] Train Loss: 0.6831 | Val Loss: 0.6543 | Val Acc: 0.9559 | Val Macro-F1: 0.9477 | Crop Acc: 0.9973 | LR: 6.55e-04
+[Custom Ep 25/60] Train Loss: 0.6800 | Val Loss: 0.6481 | Val Acc: 0.9608 | Val Macro-F1: 0.9552 | Crop Acc: 0.9979 | LR: 6.30e-04 [BEST]
+[Custom Ep 26/60] Train Loss: 0.6707 | Val Loss: 0.6452 | Val Acc: 0.9593 | Val Macro-F1: 0.9550 | Crop Acc: 0.9979 | LR: 6.04e-04
+[Custom Ep 27/60] Train Loss: 0.6701 | Val Loss: 0.6651 | Val Acc: 0.9483 | Val Macro-F1: 0.9382 | Crop Acc: 0.9970 | LR: 5.79e-04
+[Custom Ep 28/60] Train Loss: 0.6682 | Val Loss: 0.6443 | Val Acc: 0.9648 | Val Macro-F1: 0.9629 | Crop Acc: 0.9960 | LR: 5.53e-04 [BEST]
+[Custom Ep 29/60] Train Loss: 0.6635 | Val Loss: 0.6437 | Val Acc: 0.9575 | Val Macro-F1: 0.9513 | Crop Acc: 0.9973 | LR: 5.27e-04
+[Custom Ep 30/60] Train Loss: 0.6598 | Val Loss: 0.6429 | Val Acc: 0.9569 | Val Macro-F1: 0.9509 | Crop Acc: 0.9976 | LR: 5.01e-04
+[Custom Ep 31/60] Train Loss: 0.6583 | Val Loss: 0.6400 | Val Acc: 0.9605 | Val Macro-F1: 0.9496 | Crop Acc: 0.9976 | LR: 4.74e-04
+[Custom Ep 32/60] Train Loss: 0.6559 | Val Loss: 0.6401 | Val Acc: 0.9648 | Val Macro-F1: 0.9572 | Crop Acc: 0.9976 | LR: 4.48e-04
+[Custom Ep 33/60] Train Loss: 0.6537 | Val Loss: 0.6378 | Val Acc: 0.9565 | Val Macro-F1: 0.9524 | Crop Acc: 0.9982 | LR: 4.22e-04
+[Custom Ep 34/60] Train Loss: 0.6494 | Val Loss: 0.6288 | Val Acc: 0.9596 | Val Macro-F1: 0.9603 | Crop Acc: 0.9979 | LR: 3.97e-04
+[Custom Ep 35/60] Train Loss: 0.6500 | Val Loss: 0.6361 | Val Acc: 0.9581 | Val Macro-F1: 0.9454 | Crop Acc: 0.9979 | LR: 3.71e-04
+[Custom Ep 36/60] Train Loss: 0.6463 | Val Loss: 0.6338 | Val Acc: 0.9620 | Val Macro-F1: 0.9634 | Crop Acc: 0.9985 | LR: 3.46e-04 [BEST]
+[Custom Ep 37/60] Train Loss: 0.6480 | Val Loss: 0.6265 | Val Acc: 0.9644 | Val Macro-F1: 0.9628 | Crop Acc: 0.9979 | LR: 3.21e-04
+[Custom Ep 38/60] Train Loss: 0.6458 | Val Loss: 0.6228 | Val Acc: 0.9657 | Val Macro-F1: 0.9654 | Crop Acc: 0.9988 | LR: 2.97e-04 [BEST]
+[Custom Ep 39/60] Train Loss: 0.6428 | Val Loss: 0.6264 | Val Acc: 0.9687 | Val Macro-F1: 0.9685 | Crop Acc: 0.9985 | LR: 2.74e-04 [BEST]
+[Custom Ep 40/60] Train Loss: 0.6420 | Val Loss: 0.6265 | Val Acc: 0.9608 | Val Macro-F1: 0.9605 | Crop Acc: 0.9982 | LR: 2.51e-04
+[Custom Ep 41/60] Train Loss: 0.6396 | Val Loss: 0.6141 | Val Acc: 0.9651 | Val Macro-F1: 0.9643 | Crop Acc: 0.9985 | LR: 2.28e-04
+[Custom Ep 42/60] Train Loss: 0.6385 | Val Loss: 0.6291 | Val Acc: 0.9632 | Val Macro-F1: 0.9630 | Crop Acc: 0.9982 | LR: 2.07e-04
+[Custom Ep 43/60] Train Loss: 0.6393 | Val Loss: 0.6168 | Val Acc: 0.9684 | Val Macro-F1: 0.9636 | Crop Acc: 0.9979 | LR: 1.86e-04
+[Custom Ep 44/60] Train Loss: 0.6382 | Val Loss: 0.6226 | Val Acc: 0.9651 | Val Macro-F1: 0.9601 | Crop Acc: 0.9982 | LR: 1.66e-04
+[Custom Ep 45/60] Train Loss: 0.6370 | Val Loss: 0.6167 | Val Acc: 0.9678 | Val Macro-F1: 0.9653 | Crop Acc: 0.9979 | LR: 1.47e-04
+[Custom Ep 46/60] Train Loss: 0.6371 | Val Loss: 0.6180 | Val Acc: 0.9648 | Val Macro-F1: 0.9626 | Crop Acc: 0.9979 | LR: 1.29e-04
+[Custom Ep 47/60] Train Loss: 0.6363 | Val Loss: 0.6244 | Val Acc: 0.9641 | Val Macro-F1: 0.9628 | Crop Acc: 0.9982 | LR: 1.12e-04
+[Custom Ep 48/60] Train Loss: 0.6351 | Val Loss: 0.6253 | Val Acc: 0.9599 | Val Macro-F1: 0.9610 | Crop Acc: 0.9985 | LR: 9.64e-05
+[Custom Ep 49/60] Train Loss: 0.6352 | Val Loss: 0.6190 | Val Acc: 0.9657 | Val Macro-F1: 0.9667 | Crop Acc: 0.9982 | LR: 8.16e-05
+[Custom Ep 50/60] Train Loss: 0.6350 | Val Loss: 0.6209 | Val Acc: 0.9663 | Val Macro-F1: 0.9681 | Crop Acc: 0.9982 | LR: 6.79e-05
+[Custom Ep 51/60] Train Loss: 0.6343 | Val Loss: 0.6227 | Val Acc: 0.9623 | Val Macro-F1: 0.9613 | Crop Acc: 0.9982 | LR: 5.54e-05
+[Custom Ep 52/60] Train Loss: 0.6334 | Val Loss: 0.6198 | Val Acc: 0.9654 | Val Macro-F1: 0.9667 | Crop Acc: 0.9985 | LR: 4.42e-05
+[Custom Ep 53/60] Train Loss: 0.6327 | Val Loss: 0.6178 | Val Acc: 0.9644 | Val Macro-F1: 0.9657 | Crop Acc: 0.9982 | LR: 3.42e-05
+[Custom Ep 54/60] Train Loss: 0.6333 | Val Loss: 0.6207 | Val Acc: 0.9651 | Val Macro-F1: 0.9630 | Crop Acc: 0.9982 | LR: 2.54e-05 -> STOPPED_EARLY: No improvement in validation macro-F1 for 15 epochs
+
+[EARLY STOPPING TRIGGERED]: No improvement in validation macro-F1 for 15 epochs
+
+[LOG SAVED]: Per-epoch logs written to: logs/custom_none_seed42_lossv2.csv
+
+--- Evaluating Best Checkpoint on Test Splits ---
+Standard Test Split -> Macro-F1: 0.9323 | Acc: 0.9413
+Dedup Test Split    -> Macro-F1: 0.9300 | Acc: 0.9365
+Profiling model efficiency (Parameters, MB, GFLOPs, CPU Latency with 4 threads)...
+Params: 642,159 | Size: 2.45 MB | GFLOPs: 0.402 | CPU Latency: 9.99 ms +/- 1.61 ms
+[RESULT SAVED]: Evaluation payload saved to: results/custom_none_seed42_lossv2.json
+
+================================================================================
+RUNNING CUSTOM FROM SCRATCH: custom_se (attention=se) | Run ID: custom_se_seed42_lossv2 | Loss: v2
+Device: mps | Dry Run: False | Batch Size: 64 | Epochs: 60
+Scheduler: CosineAnnealingLR (lr=0.001) | Label Smoothing: 0.1 | MixUp/CutMix: OFF
+================================================================================
+[CustomNet Architecture]: attention=se | Params: 656,457 (Target < 1,500,000: PASS)
+[Custom Ep 01/60] Train Loss: 1.5275 | Val Loss: 1.0346 | Val Acc: 0.7885 | Val Macro-F1: 0.7621 | Crop Acc: 0.9824 | LR: 9.99e-04 [BEST]
+[Custom Ep 02/60] Train Loss: 1.1295 | Val Loss: 0.8582 | Val Acc: 0.8748 | Val Macro-F1: 0.8494 | Crop Acc: 0.9830 | LR: 9.97e-04 [BEST]
+[Custom Ep 03/60] Train Loss: 1.0227 | Val Loss: 0.8242 | Val Acc: 0.8885 | Val Macro-F1: 0.8595 | Crop Acc: 0.9809 | LR: 9.94e-04 [BEST]
+[Custom Ep 04/60] Train Loss: 0.9570 | Val Loss: 0.8238 | Val Acc: 0.8751 | Val Macro-F1: 0.8540 | Crop Acc: 0.9881 | LR: 9.89e-04
+[Custom Ep 05/60] Train Loss: 0.9099 | Val Loss: 0.8483 | Val Acc: 0.8593 | Val Macro-F1: 0.8412 | Crop Acc: 0.9881 | LR: 9.83e-04
+[Custom Ep 06/60] Train Loss: 0.8649 | Val Loss: 0.7309 | Val Acc: 0.9240 | Val Macro-F1: 0.9039 | Crop Acc: 0.9960 | LR: 9.76e-04 [BEST]
+[Custom Ep 07/60] Train Loss: 0.8375 | Val Loss: 0.7004 | Val Acc: 0.9310 | Val Macro-F1: 0.9136 | Crop Acc: 0.9951 | LR: 9.67e-04 [BEST]
+[Custom Ep 08/60] Train Loss: 0.8244 | Val Loss: 0.7121 | Val Acc: 0.9225 | Val Macro-F1: 0.9102 | Crop Acc: 0.9948 | LR: 9.57e-04
+[Custom Ep 09/60] Train Loss: 0.7917 | Val Loss: 0.7436 | Val Acc: 0.9110 | Val Macro-F1: 0.8930 | Crop Acc: 0.9900 | LR: 9.46e-04
+[Custom Ep 10/60] Train Loss: 0.7838 | Val Loss: 0.7498 | Val Acc: 0.8946 | Val Macro-F1: 0.8862 | Crop Acc: 0.9951 | LR: 9.33e-04
+[Custom Ep 11/60] Train Loss: 0.7697 | Val Loss: 0.7436 | Val Acc: 0.9006 | Val Macro-F1: 0.8982 | Crop Acc: 0.9957 | LR: 9.19e-04
+[Custom Ep 12/60] Train Loss: 0.7486 | Val Loss: 0.7124 | Val Acc: 0.9216 | Val Macro-F1: 0.9004 | Crop Acc: 0.9964 | LR: 9.05e-04
+[Custom Ep 13/60] Train Loss: 0.7283 | Val Loss: 0.6896 | Val Acc: 0.9332 | Val Macro-F1: 0.9288 | Crop Acc: 0.9948 | LR: 8.89e-04 [BEST]
+[Custom Ep 14/60] Train Loss: 0.7319 | Val Loss: 0.7092 | Val Acc: 0.9265 | Val Macro-F1: 0.9230 | Crop Acc: 0.9957 | LR: 8.72e-04
+[Custom Ep 15/60] Train Loss: 0.7175 | Val Loss: 0.6900 | Val Acc: 0.9386 | Val Macro-F1: 0.9353 | Crop Acc: 0.9967 | LR: 8.54e-04 [BEST]
+[Custom Ep 16/60] Train Loss: 0.7182 | Val Loss: 0.6899 | Val Acc: 0.9407 | Val Macro-F1: 0.9257 | Crop Acc: 0.9967 | LR: 8.35e-04
+[Custom Ep 17/60] Train Loss: 0.7025 | Val Loss: 0.6785 | Val Acc: 0.9483 | Val Macro-F1: 0.9439 | Crop Acc: 0.9979 | LR: 8.15e-04 [BEST]
+[Custom Ep 18/60] Train Loss: 0.6997 | Val Loss: 0.6742 | Val Acc: 0.9417 | Val Macro-F1: 0.9305 | Crop Acc: 0.9982 | LR: 7.94e-04
+[Custom Ep 19/60] Train Loss: 0.6915 | Val Loss: 0.6981 | Val Acc: 0.9298 | Val Macro-F1: 0.9291 | Crop Acc: 0.9976 | LR: 7.73e-04
+[Custom Ep 20/60] Train Loss: 0.6899 | Val Loss: 0.6880 | Val Acc: 0.9322 | Val Macro-F1: 0.9362 | Crop Acc: 0.9954 | LR: 7.50e-04
+[Custom Ep 21/60] Train Loss: 0.6756 | Val Loss: 0.6773 | Val Acc: 0.9432 | Val Macro-F1: 0.9394 | Crop Acc: 0.9970 | LR: 7.27e-04
+[Custom Ep 22/60] Train Loss: 0.6765 | Val Loss: 0.6767 | Val Acc: 0.9420 | Val Macro-F1: 0.9385 | Crop Acc: 0.9973 | LR: 7.04e-04
+[Custom Ep 23/60] Train Loss: 0.6810 | Val Loss: 0.6376 | Val Acc: 0.9584 | Val Macro-F1: 0.9520 | Crop Acc: 0.9979 | LR: 6.80e-04 [BEST]
+[Custom Ep 24/60] Train Loss: 0.6735 | Val Loss: 0.6774 | Val Acc: 0.9398 | Val Macro-F1: 0.9373 | Crop Acc: 0.9954 | LR: 6.55e-04
+[Custom Ep 25/60] Train Loss: 0.6662 | Val Loss: 0.6607 | Val Acc: 0.9514 | Val Macro-F1: 0.9473 | Crop Acc: 0.9970 | LR: 6.30e-04
+[Custom Ep 26/60] Train Loss: 0.6604 | Val Loss: 0.6963 | Val Acc: 0.9441 | Val Macro-F1: 0.9469 | Crop Acc: 0.9973 | LR: 6.04e-04
+[Custom Ep 27/60] Train Loss: 0.6651 | Val Loss: 0.6722 | Val Acc: 0.9493 | Val Macro-F1: 0.9446 | Crop Acc: 0.9976 | LR: 5.79e-04
+[Custom Ep 28/60] Train Loss: 0.6616 | Val Loss: 0.6699 | Val Acc: 0.9468 | Val Macro-F1: 0.9492 | Crop Acc: 0.9964 | LR: 5.53e-04
+[Custom Ep 29/60] Train Loss: 0.6568 | Val Loss: 0.6880 | Val Acc: 0.9420 | Val Macro-F1: 0.9349 | Crop Acc: 0.9973 | LR: 5.27e-04
+[Custom Ep 30/60] Train Loss: 0.6512 | Val Loss: 0.6600 | Val Acc: 0.9499 | Val Macro-F1: 0.9486 | Crop Acc: 0.9985 | LR: 5.01e-04
+[Custom Ep 31/60] Train Loss: 0.6474 | Val Loss: 0.6736 | Val Acc: 0.9520 | Val Macro-F1: 0.9494 | Crop Acc: 0.9982 | LR: 4.74e-04
+[Custom Ep 32/60] Train Loss: 0.6447 | Val Loss: 0.6593 | Val Acc: 0.9496 | Val Macro-F1: 0.9532 | Crop Acc: 0.9973 | LR: 4.48e-04 [BEST]
+[Custom Ep 33/60] Train Loss: 0.6445 | Val Loss: 0.6747 | Val Acc: 0.9496 | Val Macro-F1: 0.9507 | Crop Acc: 0.9976 | LR: 4.22e-04
+[Custom Ep 34/60] Train Loss: 0.6469 | Val Loss: 0.6715 | Val Acc: 0.9493 | Val Macro-F1: 0.9473 | Crop Acc: 0.9970 | LR: 3.97e-04
+[Custom Ep 35/60] Train Loss: 0.6406 | Val Loss: 0.6708 | Val Acc: 0.9517 | Val Macro-F1: 0.9445 | Crop Acc: 0.9985 | LR: 3.71e-04
+[Custom Ep 36/60] Train Loss: 0.6389 | Val Loss: 0.6825 | Val Acc: 0.9520 | Val Macro-F1: 0.9460 | Crop Acc: 0.9979 | LR: 3.46e-04
+[Custom Ep 37/60] Train Loss: 0.6381 | Val Loss: 0.6810 | Val Acc: 0.9493 | Val Macro-F1: 0.9416 | Crop Acc: 0.9970 | LR: 3.21e-04
+[Custom Ep 38/60] Train Loss: 0.6391 | Val Loss: 0.6799 | Val Acc: 0.9468 | Val Macro-F1: 0.9395 | Crop Acc: 0.9979 | LR: 2.97e-04
+[Custom Ep 39/60] Train Loss: 0.6348 | Val Loss: 0.6659 | Val Acc: 0.9477 | Val Macro-F1: 0.9478 | Crop Acc: 0.9973 | LR: 2.74e-04
+[Custom Ep 40/60] Train Loss: 0.6332 | Val Loss: 0.6633 | Val Acc: 0.9532 | Val Macro-F1: 0.9517 | Crop Acc: 0.9979 | LR: 2.51e-04
+[Custom Ep 41/60] Train Loss: 0.6337 | Val Loss: 0.6735 | Val Acc: 0.9520 | Val Macro-F1: 0.9456 | Crop Acc: 0.9982 | LR: 2.28e-04
+[Custom Ep 42/60] Train Loss: 0.6335 | Val Loss: 0.6753 | Val Acc: 0.9490 | Val Macro-F1: 0.9481 | Crop Acc: 0.9979 | LR: 2.07e-04
+[Custom Ep 43/60] Train Loss: 0.6321 | Val Loss: 0.6622 | Val Acc: 0.9538 | Val Macro-F1: 0.9515 | Crop Acc: 0.9973 | LR: 1.86e-04
+[Custom Ep 44/60] Train Loss: 0.6269 | Val Loss: 0.6596 | Val Acc: 0.9559 | Val Macro-F1: 0.9537 | Crop Acc: 0.9979 | LR: 1.66e-04 [BEST]
+[Custom Ep 45/60] Train Loss: 0.6300 | Val Loss: 0.6569 | Val Acc: 0.9575 | Val Macro-F1: 0.9518 | Crop Acc: 0.9985 | LR: 1.47e-04
+[Custom Ep 46/60] Train Loss: 0.6265 | Val Loss: 0.6578 | Val Acc: 0.9529 | Val Macro-F1: 0.9505 | Crop Acc: 0.9976 | LR: 1.29e-04
+[Custom Ep 47/60] Train Loss: 0.6277 | Val Loss: 0.6484 | Val Acc: 0.9596 | Val Macro-F1: 0.9580 | Crop Acc: 0.9976 | LR: 1.12e-04 [BEST]
+[Custom Ep 48/60] Train Loss: 0.6270 | Val Loss: 0.6624 | Val Acc: 0.9556 | Val Macro-F1: 0.9527 | Crop Acc: 0.9976 | LR: 9.64e-05
+[Custom Ep 49/60] Train Loss: 0.6259 | Val Loss: 0.6625 | Val Acc: 0.9559 | Val Macro-F1: 0.9543 | Crop Acc: 0.9976 | LR: 8.16e-05
+[Custom Ep 50/60] Train Loss: 0.6270 | Val Loss: 0.6534 | Val Acc: 0.9575 | Val Macro-F1: 0.9588 | Crop Acc: 0.9982 | LR: 6.79e-05 [BEST]
+[Custom Ep 51/60] Train Loss: 0.6259 | Val Loss: 0.6494 | Val Acc: 0.9578 | Val Macro-F1: 0.9577 | Crop Acc: 0.9976 | LR: 5.54e-05
+[Custom Ep 52/60] Train Loss: 0.6255 | Val Loss: 0.6561 | Val Acc: 0.9559 | Val Macro-F1: 0.9533 | Crop Acc: 0.9979 | LR: 4.42e-05
+[Custom Ep 53/60] Train Loss: 0.6247 | Val Loss: 0.6568 | Val Acc: 0.9575 | Val Macro-F1: 0.9538 | Crop Acc: 0.9976 | LR: 3.42e-05
+[Custom Ep 54/60] Train Loss: 0.6252 | Val Loss: 0.6544 | Val Acc: 0.9569 | Val Macro-F1: 0.9557 | Crop Acc: 0.9979 | LR: 2.54e-05
+[Custom Ep 55/60] Train Loss: 0.6250 | Val Loss: 0.6523 | Val Acc: 0.9578 | Val Macro-F1: 0.9547 | Crop Acc: 0.9976 | LR: 1.80e-05
+[Custom Ep 56/60] Train Loss: 0.6245 | Val Loss: 0.6558 | Val Acc: 0.9562 | Val Macro-F1: 0.9547 | Crop Acc: 0.9979 | LR: 1.19e-05
+[Custom Ep 57/60] Train Loss: 0.6250 | Val Loss: 0.6524 | Val Acc: 0.9575 | Val Macro-F1: 0.9539 | Crop Acc: 0.9976 | LR: 7.15e-06
+[Custom Ep 58/60] Train Loss: 0.6241 | Val Loss: 0.6553 | Val Acc: 0.9578 | Val Macro-F1: 0.9546 | Crop Acc: 0.9976 | LR: 3.74e-06
+[Custom Ep 59/60] Train Loss: 0.6256 | Val Loss: 0.6516 | Val Acc: 0.9581 | Val Macro-F1: 0.9549 | Crop Acc: 0.9979 | LR: 1.68e-06
+[Custom Ep 60/60] Train Loss: 0.6244 | Val Loss: 0.6563 | Val Acc: 0.9565 | Val Macro-F1: 0.9543 | Crop Acc: 0.9976 | LR: 1.00e-06
+
+[LOG SAVED]: Per-epoch logs written to: logs/custom_se_seed42_lossv2.csv
+
+--- Evaluating Best Checkpoint on Test Splits ---
+Standard Test Split -> Macro-F1: 0.9331 | Acc: 0.9340
+Dedup Test Split    -> Macro-F1: 0.9293 | Acc: 0.9274
+Profiling model efficiency (Parameters, MB, GFLOPs, CPU Latency with 4 threads)...
+Params: 656,457 | Size: 2.5 MB | GFLOPs: 0.402 | CPU Latency: 9.42 ms +/- 0.44 ms
+[RESULT SAVED]: Evaluation payload saved to: results/custom_se_seed42_lossv2.json
+
+================================================================================
+RUNNING PRETRAINED: resnet18 (resnet18) | Run ID: resnet18_seed42_lossv2 | Loss: v2
+Device: mps | Dry Run: False | Batch Size: 64
+Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
+================================================================================
+
+--- Phase 1: Head Only Training (3 epochs, lr=1e-3) ---
+[P1 Ep 1/3 (Total Ep 1)] Train Loss: 1.5154 | Val Loss: 1.0895 | Val Acc: 0.8724 | Val Macro-F1: 0.8324 [BEST]
+[P1 Ep 2/3 (Total Ep 2)] Train Loss: 1.0332 | Val Loss: 0.9238 | Val Acc: 0.8921 | Val Macro-F1: 0.8567 [BEST]
+[P1 Ep 3/3 (Total Ep 3)] Train Loss: 0.9558 | Val Loss: 0.8761 | Val Acc: 0.9079 | Val Macro-F1: 0.8756 [BEST]
+
+--- Phase 2: Fine-Tuning All Layers (30 epochs, lr=1e-4, Cosine Decay) ---
+[P2 Ep 01/30 (Total Ep 04)] Train Loss: 0.8385 | Val Loss: 0.7225 | Val Acc: 0.9459 | Val Macro-F1: 0.9352 | LR: 9.97e-05 [BEST]
+[P2 Ep 02/30 (Total Ep 05)] Train Loss: 0.7425 | Val Loss: 0.6864 | Val Acc: 0.9550 | Val Macro-F1: 0.9488 | LR: 9.89e-05 [BEST]
+[P2 Ep 03/30 (Total Ep 06)] Train Loss: 0.6975 | Val Loss: 0.6571 | Val Acc: 0.9690 | Val Macro-F1: 0.9654 | LR: 9.76e-05 [BEST]
+[P2 Ep 04/30 (Total Ep 07)] Train Loss: 0.6614 | Val Loss: 0.6399 | Val Acc: 0.9705 | Val Macro-F1: 0.9650 | LR: 9.57e-05
+[P2 Ep 05/30 (Total Ep 08)] Train Loss: 0.6434 | Val Loss: 0.6314 | Val Acc: 0.9748 | Val Macro-F1: 0.9696 | LR: 9.34e-05 [BEST]
+[P2 Ep 06/30 (Total Ep 09)] Train Loss: 0.6287 | Val Loss: 0.6204 | Val Acc: 0.9742 | Val Macro-F1: 0.9676 | LR: 9.05e-05
+[P2 Ep 07/30 (Total Ep 10)] Train Loss: 0.6150 | Val Loss: 0.6126 | Val Acc: 0.9763 | Val Macro-F1: 0.9736 | LR: 8.73e-05 [BEST]
+[P2 Ep 08/30 (Total Ep 11)] Train Loss: 0.6048 | Val Loss: 0.6106 | Val Acc: 0.9760 | Val Macro-F1: 0.9700 | LR: 8.36e-05
+[P2 Ep 09/30 (Total Ep 12)] Train Loss: 0.5972 | Val Loss: 0.6074 | Val Acc: 0.9760 | Val Macro-F1: 0.9701 | LR: 7.96e-05
+[P2 Ep 10/30 (Total Ep 13)] Train Loss: 0.5905 | Val Loss: 0.6025 | Val Acc: 0.9781 | Val Macro-F1: 0.9722 | LR: 7.52e-05
+[P2 Ep 11/30 (Total Ep 14)] Train Loss: 0.5879 | Val Loss: 0.6074 | Val Acc: 0.9766 | Val Macro-F1: 0.9733 | LR: 7.06e-05
+[P2 Ep 12/30 (Total Ep 15)] Train Loss: 0.5821 | Val Loss: 0.6015 | Val Acc: 0.9775 | Val Macro-F1: 0.9693 | LR: 6.58e-05
+[P2 Ep 13/30 (Total Ep 16)] Train Loss: 0.5774 | Val Loss: 0.6015 | Val Acc: 0.9769 | Val Macro-F1: 0.9700 | LR: 6.08e-05 -> STOPPED_EARLY: Early stopping patience (6 epochs) reached in Phase 2
+
+[EARLY STOPPING TRIGGERED]: Early stopping patience (6 epochs) reached in Phase 2
+
+[LOG SAVED]: Per-epoch logs written to: logs/resnet18_seed42_lossv2.csv
+
+--- Evaluating Best Checkpoint on Test Splits ---
+Standard Test Split -> Macro-F1: 0.9455 | Acc: 0.9567
+Dedup Test Split    -> Macro-F1: 0.9441 | Acc: 0.9529
+Profiling model efficiency (Parameters, MB, GFLOPs, CPU Latency with 4 threads)...
+Params: 11,182,668 | Size: 42.66 MB | GFLOPs: 3.627 | CPU Latency: 10.89 ms +/- 0.56 ms
+[RESULT SAVED]: Evaluation payload saved to: results/resnet18_seed42_lossv2.json
+
+================================================================================
+RUNNING PRETRAINED: mobilenetv3_small (mobilenetv3_small_100) | Run ID: mobilenetv3_small_seed42_lossv2 | Loss: v2
+Device: mps | Dry Run: False | Batch Size: 64
+Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
+================================================================================
+
+--- Phase 1: Head Only Training (3 epochs, lr=1e-3) ---
+[P1 Ep 1/3 (Total Ep 1)] Train Loss: 2.2064 | Val Loss: 1.2142 | Val Acc: 0.8095 | Val Macro-F1: 0.7654 [BEST]
+[P1 Ep 2/3 (Total Ep 2)] Train Loss: 1.3692 | Val Loss: 1.0211 | Val Acc: 0.8772 | Val Macro-F1: 0.8354 [BEST]
+[P1 Ep 3/3 (Total Ep 3)] Train Loss: 1.2057 | Val Loss: 0.9535 | Val Acc: 0.9003 | Val Macro-F1: 0.8669 [BEST]
+
+--- Phase 2: Fine-Tuning All Layers (30 epochs, lr=1e-4, Cosine Decay) ---
+[P2 Ep 01/30 (Total Ep 04)] Train Loss: 0.9479 | Val Loss: 0.7689 | Val Acc: 0.9338 | Val Macro-F1: 0.9092 | LR: 9.97e-05 [BEST]
+[P2 Ep 02/30 (Total Ep 05)] Train Loss: 0.7511 | Val Loss: 0.7499 | Val Acc: 0.9246 | Val Macro-F1: 0.9021 | LR: 9.89e-05
+[P2 Ep 03/30 (Total Ep 06)] Train Loss: 0.6979 | Val Loss: 0.6618 | Val Acc: 0.9669 | Val Macro-F1: 0.9621 | LR: 9.76e-05 [BEST]
+[P2 Ep 04/30 (Total Ep 07)] Train Loss: 0.6542 | Val Loss: 0.7078 | Val Acc: 0.9490 | Val Macro-F1: 0.9336 | LR: 9.57e-05
+[P2 Ep 05/30 (Total Ep 08)] Train Loss: 0.6351 | Val Loss: 0.6293 | Val Acc: 0.9754 | Val Macro-F1: 0.9695 | LR: 9.34e-05 [BEST]
+[P2 Ep 06/30 (Total Ep 09)] Train Loss: 0.6164 | Val Loss: 0.7154 | Val Acc: 0.9432 | Val Macro-F1: 0.9190 | LR: 9.05e-05
+[P2 Ep 07/30 (Total Ep 10)] Train Loss: 0.6106 | Val Loss: 0.6233 | Val Acc: 0.9714 | Val Macro-F1: 0.9664 | LR: 8.73e-05
+[P2 Ep 08/30 (Total Ep 11)] Train Loss: 0.5946 | Val Loss: 0.6178 | Val Acc: 0.9720 | Val Macro-F1: 0.9698 | LR: 8.36e-05 [BEST]
+[P2 Ep 09/30 (Total Ep 12)] Train Loss: 0.5821 | Val Loss: 0.6153 | Val Acc: 0.9763 | Val Macro-F1: 0.9675 | LR: 7.96e-05
