@@ -19,11 +19,14 @@ Tasks:
      thresholds 0.0, 0.5, 0.6, 0.7, 0.8, 0.9.
 """
 
+import argparse
 import json
 import random
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np
 import pandas as pd
@@ -36,6 +39,12 @@ from torch.utils.data import DataLoader
 from src.data.dataset import CropDiseaseDataset, get_transforms
 from src.models.backbones import create_model
 from src.models.custom_net import build_custom_net
+from src.utils.paths import (
+    resolve_checkpoint_path,
+    resolve_result_path,
+    print_and_verify_paths,
+    verify_path_exists,
+)
 
 SEED = 42
 N_BOOTSTRAP = 2000
@@ -87,10 +96,18 @@ def get_native_size(path_str: str) -> Tuple[int, int]:
 
 
 @torch.no_grad()
-def run_inference(model_name: str, test_df: pd.DataFrame, device: torch.device) -> Dict[str, Any]:
-    ckpt_path = CHECKPOINTS_DIR / f"{model_name}_seed42_best.pth"
-    if not ckpt_path.exists():
-        raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+def run_inference(
+    model_name: str,
+    test_df: pd.DataFrame,
+    device: torch.device,
+    checkpoint_path: Optional[Union[str, Path]] = None,
+    loss_version: str = "v2",
+    seed: int = 42,
+    checkpoints_dir: Union[str, Path] = "checkpoints",
+) -> Dict[str, Any]:
+    if checkpoint_path is None:
+        checkpoint_path = resolve_checkpoint_path(model_name, seed=seed, loss_version=loss_version, checkpoints_dir=checkpoints_dir)
+    ckpt_path = verify_path_exists(checkpoint_path, description=f"Checkpoint for '{model_name}'", loss_version=loss_version)
 
     is_custom = "custom" in model_name
     if is_custom:
@@ -187,16 +204,45 @@ def compute_group_bootstrap_ci(
 
 
 def main():
-    set_seed(SEED)
-    device = get_device()
+    parser = argparse.ArgumentParser(description="Subgroup and Risk Analysis")
+    parser.add_argument("--loss-version", type=str, choices=["v1", "v2"], default="v2", help="Loss version ({v1, v2}, default: v2)")
+    parser.add_argument("--seed", type=int, default=42, help="Seed (default: 42)")
+    parser.add_argument("--models", nargs="+", default=MODELS, help="Models to analyze")
+    parser.add_argument("--checkpoints-dir", type=str, default="checkpoints", help="Checkpoints directory")
+    parser.add_argument("--results-dir", type=str, default="results", help="Results directory")
+    parser.add_argument("--splits-dir", type=str, default="splits/dedup", help="Splits directory")
+    parser.add_argument("--device", type=str, default=None, help="Device ('cpu', 'mps', 'cuda')")
+    args = parser.parse_args()
+
+    set_seed(args.seed)
+    device = get_device() if args.device is None else torch.device(args.device)
+    results_dir = Path(args.results_dir)
+    checkpoints_dir = Path(args.checkpoints_dir)
+    splits_dir = Path(args.splits_dir)
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    models = args.models
+    checkpoints_to_load = {
+        m: resolve_checkpoint_path(m, seed=args.seed, loss_version=args.loss_version, checkpoints_dir=checkpoints_dir)
+        for m in models
+    }
+    result_json_to_load = resolve_result_path(models[0], seed=args.seed, loss_version=args.loss_version, results_dir=results_dir)
+
+    print_and_verify_paths(
+        checkpoints=checkpoints_to_load,
+        results={f"{models[0]}_result": result_json_to_load},
+        loss_version=args.loss_version,
+        header="SUBGROUP & RISK ANALYSIS TARGET PATHS",
+    )
+
     print(f"Device: {device}")
 
     # Load splits
-    test_df = pd.read_csv(SPLITS_DIR / "test.csv")
-    val_df = pd.read_csv(SPLITS_DIR / "val.csv")
-    train_df = pd.read_csv(SPLITS_DIR / "train.csv")
+    test_df = pd.read_csv(splits_dir / "test.csv")
+    val_df = pd.read_csv(splits_dir / "val.csv")
+    train_df = pd.read_csv(splits_dir / "train.csv")
 
-    with open("results/resnet18_seed42.json", "r") as f:
+    with open(result_json_to_load, "r", encoding="utf-8") as f:
         class_names = json.load(f)["class_names"]
 
     # Native resolutions for test set
@@ -209,12 +255,20 @@ def main():
         for s, c in zip(test_sizes, test_df["crop"])
     ]
 
-    # Run inference for all 4 models
+    # Run inference for all models
     print("\nRunning inference for models...")
     model_outputs = {}
-    for m in MODELS:
+    for m in models:
         print(f"  Inferencing {m} ...")
-        model_outputs[m] = run_inference(m, test_df, device)
+        model_outputs[m] = run_inference(
+            m,
+            test_df,
+            device,
+            checkpoint_path=checkpoints_to_load[m],
+            loss_version=args.loss_version,
+            seed=args.seed,
+            checkpoints_dir=checkpoints_dir,
+        )
 
     # ─────────────────────────────────────────────────────────────────────────
     # Task 1: Subgroup performance per crop x bucket
@@ -232,7 +286,7 @@ def main():
     ]
 
     task1_rows = []
-    for model_name in MODELS:
+    for model_name in models:
         y_pred = model_outputs[model_name]["preds"]
         y_true = test_df["label"].values
         group_ids = test_df["group_id"].values
@@ -276,7 +330,7 @@ def main():
 
     df_task1 = pd.DataFrame(task1_rows)
     print(df_task1.to_string(index=False))
-    df_task1.to_csv(RESULTS_DIR / "task1_crop_bucket_metrics.csv", index=False)
+    df_task1.to_csv(results_dir / "task1_crop_bucket_metrics.csv", index=False)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Task 2: Class vs Bucket Overlap Across Splits
@@ -349,7 +403,7 @@ def main():
 
     df_task2 = pd.DataFrame(task2_rows)
     print(df_task2.to_string(index=False))
-    df_task2.to_csv(RESULTS_DIR / "task2_source_bucket_overlap.csv", index=False)
+    df_task2.to_csv(results_dir / "task2_source_bucket_overlap.csv", index=False)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Task 3: Background Proxy (Outer 10% Border Brightness in Papaya)
@@ -417,7 +471,7 @@ def main():
 
     df_task3 = pd.DataFrame(task3_rows)
     print(df_task3.to_string(index=False))
-    df_task3.to_csv(RESULTS_DIR / "task3_papaya_border_brightness.csv", index=False)
+    df_task3.to_csv(results_dir / "task3_papaya_border_brightness.csv", index=False)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Task 4: Risk-Coverage Tables for Each Model
@@ -429,7 +483,7 @@ def main():
     thresholds = [0.0, 0.5, 0.6, 0.7, 0.8, 0.9]
     task4_all_rows = []
 
-    for model_name in MODELS:
+    for model_name in models:
         print(f"\nModel: {model_name}")
         probs = model_outputs[model_name]["probs"]
         preds = model_outputs[model_name]["preds"]
@@ -477,7 +531,7 @@ def main():
         print(df_m[["confidence_threshold", "retained_count", "fraction_retained", "accuracy", "macro_f1", "macro_f1_active", "active_classes_count"]].to_string(index=False))
 
     df_task4 = pd.DataFrame(task4_all_rows)
-    df_task4.to_csv(RESULTS_DIR / "task4_risk_coverage.csv", index=False)
+    df_task4.to_csv(results_dir / "task4_risk_coverage.csv", index=False)
 
     print("\n" + "=" * 90)
     print("ALL ANALYSES COMPLETE. CSV FILES SAVED IN results/.")

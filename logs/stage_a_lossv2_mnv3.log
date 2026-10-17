@@ -26,3 +26,47 @@ Phase 1: 3 epochs | Phase 2: 30 epochs | ES Patience: 6
 [P2 Ep 05/30 (Total Ep 08)] Train Loss: 0.6364 | Val Loss: 0.6215 | Val Acc: 0.9748 | Val Macro-F1: 0.9715 | LR: 9.34e-05 [BEST]
 [P2 Ep 06/30 (Total Ep 09)] Train Loss: 0.6193 | Val Loss: 0.6173 | Val Acc: 0.9736 | Val Macro-F1: 0.9664 | LR: 9.05e-05
 [P2 Ep 07/30 (Total Ep 10)] Train Loss: 0.5992 | Val Loss: 0.6409 | Val Acc: 0.9654 | Val Macro-F1: 0.9536 | LR: 8.73e-05
+[P2 Ep 08/30 (Total Ep 11)] Train Loss: 0.5927 | Val Loss: 0.6316 | Val Acc: 0.9635 | Val Macro-F1: 0.9514 | LR: 8.36e-05
+[P2 Ep 09/30 (Total Ep 12)] Train Loss: 0.5826 | Val Loss: 0.6489 | Val Acc: 0.9620 | Val Macro-F1: 0.9563 | LR: 7.96e-05
+[P2 Ep 10/30 (Total Ep 13)] Train Loss: 0.5784 | Val Loss: 0.6429 | Val Acc: 0.9590 | Val Macro-F1: 0.9577 | LR: 7.52e-05
+[P2 Ep 11/30 (Total Ep 14)] Train Loss: 0.5727 | Val Loss: 0.6135 | Val Acc: 0.9696 | Val Macro-F1: 0.9670 | LR: 7.06e-05 -> STOPPED_EARLY: Early stopping patience (6 epochs) reached in Phase 2
+
+[EARLY STOPPING TRIGGERED]: Early stopping patience (6 epochs) reached in Phase 2
+
+[LOG SAVED]: Per-epoch logs written to: logs/mobilenetv3_small_seed42_lossv2.csv
+
+--- Evaluating Best Checkpoint on Test Splits ---
+Standard Test Split -> Macro-F1: 0.9519 | Acc: 0.9527
+Dedup Test Split    -> Macro-F1: 0.9504 | Acc: 0.9483
+Profiling model efficiency (Parameters, MB, GFLOPs, CPU Latency with 4 threads)...
+Params: 1,530,156 | Size: 5.84 MB | GFLOPs: 0.111 | CPU Latency: 36.92 ms +/- 0.95 ms
+[RESULT SAVED]: Evaluation payload saved to: results/mobilenetv3_small_seed42_lossv2.json
+
+================================================================================
+ALL RUNS COMPLETE. BUILDING STAGE A TABLE & CONFUSION MATRICES...
+================================================================================
+
+================================================================================
+STAGE A: AGGREGATING RESULTS & COMPUTING GROUP-BOOTSTRAP CIs
+Results Dir: results | Output: results/stage_a_table.csv | Reports: reports
+================================================================================
+[WARNING] No result JSON found for model: efficientnet_b0
+
+[SAVED] Stage A summary table written to: results/stage_a_table.csv
+
+====================================================================================================
+STAGE A EVALUATION SUMMARY TABLE:
+====================================================================================================
+            model loss_version  macro-F1 (dedup test) macro-F1 (dedup test) 95% CI  macro-F1 (standard test) macro-F1 (standard test) 95% CI  accuracy   params  size_MB  GFLOPs  latency
+         resnet18           v2                 0.9441             [0.9194, 0.9623]                    0.9455                [0.9203, 0.9641]    0.9567 11182668    42.66   3.627    10.89
+         resnet18           v1                 0.9566             [0.9299, 0.9735]                    0.9593                [0.9333, 0.9757]    0.9641 11182668    42.66   3.627     7.81
+mobilenetv3_small           v2                 0.9504             [0.9216, 0.9691]                    0.9519                [0.9222, 0.9706]    0.9527  1530156     5.84   0.111    36.92
+mobilenetv3_small           v1                 0.9528             [0.9262, 0.9725]                    0.9551                [0.9291, 0.9734]    0.9576  1530156     5.84   0.111    29.40
+mobilenetv3_large           v1                 0.9407             [0.9104, 0.9612]                    0.9425                [0.9109, 0.9629]    0.9585  4217404    16.09   0.431    63.68
+      custom_none           v2                 0.9300             [0.8964, 0.9558]                    0.9323                [0.8978, 0.9581]    0.9413   642159     2.45   0.402     9.99
+      custom_none           v1                 0.9133             [0.8734, 0.9417]                    0.9171                [0.8764, 0.9463]    0.9312   642159     2.45   0.402     8.98
+        custom_se           v2                 0.9293             [0.8948, 0.9546]                    0.9331                [0.8996, 0.9574]    0.9340   656457     2.50   0.402     9.42
+        custom_se           v1                 0.9229             [0.8837, 0.9506]                    0.9259                [0.8870, 0.9536]    0.9248   656457     2.50   0.402     9.50
+      custom_cbam           v1                 0.9046             [0.8665, 0.9314]                    0.9071                [0.8691, 0.9334]    0.9232   656247     2.50   0.403     9.82
+====================================================================================================
+

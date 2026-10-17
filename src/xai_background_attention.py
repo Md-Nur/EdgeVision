@@ -29,6 +29,7 @@ from src.models.backbones import CropDiseaseClassifier
 from src.models.custom_net import build_custom_net
 from src.xai.gradcam import GradCAM
 from src.xai.quantitative import segment_leaf_foreground
+from src.utils.paths import resolve_checkpoint_path, print_and_verify_paths
 
 
 CLASS_NAMES = [
@@ -365,13 +366,15 @@ def run_xai_background_analysis(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Multi-Crop Disease XAI Background Attention Analysis.")
     parser.add_argument("--model", type=str, default="resnet18", help=f"Model to test. Choices: {list(MODEL_SPECS.keys())}")
-    parser.add_argument("--checkpoint", type=str, default=None, help="Path to checkpoint. Defaults to checkpoints/<model>_seed42_best.pth")
+    parser.add_argument("--checkpoint", type=str, default=None, help="Path to checkpoint. If omitted, resolved via --model/--seed/--loss-version.")
+    parser.add_argument("--loss-version", choices=["v1", "v2"], default="v2", help="Loss version used for training (default: v2). Determines checkpoint name suffix.")
     parser.add_argument("--splits-dir", type=str, default="splits", help="Directory containing splits")
     parser.add_argument("--results-dir", type=str, default="results", help="Directory for output CSV")
     parser.add_argument("--reports-dir", type=str, default="reports", help="Directory for output overlays")
     parser.add_argument("--image-root", type=str, default=".", help="Root directory for dataset image paths")
     parser.add_argument("--sample-size", type=int, default=None, help="Subset sample size (e.g. 64 for dry run / smoke test)")
     parser.add_argument("--device", type=str, default="cpu", help="Compute device ('cpu', 'mps', 'cuda'). Defaults to 'cpu'")
+    parser.add_argument("--seed", type=int, default=42, help="Deterministic seed (default: 42)")
     parser.add_argument("--dry-run", action="store_true", default=False, help="Run dry run with 64-image subset writing to *_dry directories")
     parser.add_argument("--max-overlays", type=int, default=5, help="Max correct/incorrect overlays to save per class (default: 5)")
     args = parser.parse_args()
@@ -381,15 +384,30 @@ def main() -> None:
         results_dir = Path("results_dry")
         reports_dir = Path("reports_dry")
         sample_size = 64 if args.sample_size is None else args.sample_size
+        checkpoints_dir = Path("checkpoints_dry")
     else:
         results_dir = Path(args.results_dir)
         reports_dir = Path(args.reports_dir)
         sample_size = args.sample_size
+        checkpoints_dir = Path("checkpoints")
 
-    ckpt_path = Path(args.checkpoint) if args.checkpoint else Path("checkpoints") / f"{args.model}_seed42_best.pth"
-    if not ckpt_path.exists():
-        if args.dry_run and (Path("checkpoints_dry") / f"{args.model}_seed42_best.pth").exists():
-            ckpt_path = Path("checkpoints_dry") / f"{args.model}_seed42_best.pth"
+    if args.checkpoint:
+        ckpt_path = Path(args.checkpoint)
+    else:
+        ckpt_path = resolve_checkpoint_path(
+            args.model,
+            seed=args.seed,
+            loss_version=args.loss_version,
+            checkpoints_dir=checkpoints_dir,
+        )
+
+    # Print resolved paths and exit with error if missing (no silent fallback)
+    print_and_verify_paths(
+        checkpoints={args.model: ckpt_path},
+        results={},
+        loss_version=args.loss_version,
+        header="XAI BACKGROUND ATTENTION",
+    )
 
     run_xai_background_analysis(
         model_name=args.model,
@@ -407,3 +425,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

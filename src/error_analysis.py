@@ -24,12 +24,16 @@ Usage:
   PYTHONPATH=. .venv/bin/python src/error_analysis.py
 """
 
+import argparse
 import json
 import os
 import random
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -44,6 +48,12 @@ from torch.utils.data import DataLoader
 from src.data.dataset import CropDiseaseDataset, get_transforms
 from src.models.backbones import create_model
 from src.models.custom_net import build_custom_net, CROP_TO_CLASSES, CLASS_TO_CROP
+from src.utils.paths import (
+    resolve_checkpoint_path,
+    resolve_result_path,
+    print_and_verify_paths,
+    verify_path_exists,
+)
 
 # ── constants ────────────────────────────────────────────────────────────────
 SEED = 42
@@ -54,13 +64,8 @@ CHECKPOINTS_DIR = Path("checkpoints")
 SPLITS_DIR = Path("splits_cache/dedup") if Path("splits_cache/dedup").exists() else Path("splits/dedup")
 DATA_ROOT = Path("data_cache") if Path("data_cache").exists() else Path("data")
 
-# Maps short names → result JSON paths
-MODEL_JSON: Dict[str, str] = {
-    "resnet18":          "results/resnet18_seed42.json",
-    "mobilenetv3_small": "results/mobilenetv3_small_seed42.json",
-    "custom_none":       "results/custom_none_seed42.json",
-    "custom_se":         "results/custom_se_seed42.json",
-}
+DEFAULT_MODELS = ["resnet18", "mobilenetv3_small", "custom_none", "custom_se"]
+
 
 # Crop name mapping
 CROP_NAMES = ["Papaya", "Potato", "Rice"]
@@ -119,7 +124,13 @@ def resolve_image_path(raw_path: str) -> Path:
     return p
 
 
-def load_predictions(model_key: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[str]]:
+def load_predictions(
+    model_key: str,
+    result_path: Optional[Union[str, Path]] = None,
+    loss_version: str = "v2",
+    seed: int = 42,
+    results_dir: Union[str, Path] = "results",
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[str]]:
     """
     Load y_true, y_pred, group_ids, and class_names from a saved result JSON.
 
@@ -129,8 +140,11 @@ def load_predictions(model_key: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray
         group_ids   : (N,) array of group IDs for block-bootstrap
         class_names : ordered list of 12 class names
     """
-    json_path = MODEL_JSON[model_key]
-    with open(json_path, "r", encoding="utf-8") as f:
+    if result_path is None:
+        result_path = resolve_result_path(model_key, seed=seed, loss_version=loss_version, results_dir=results_dir)
+    res_p = verify_path_exists(result_path, description=f"Result JSON for '{model_key}'", loss_version=loss_version)
+
+    with open(res_p, "r", encoding="utf-8") as f:
         result = json.load(f)
 
     dt = result["dedup_test"]
@@ -151,6 +165,10 @@ def run_model_inference(
     test_df: pd.DataFrame,
     device: torch.device,
     batch_size: int = 64,
+    checkpoint_path: Optional[Union[str, Path]] = None,
+    loss_version: str = "v2",
+    seed: int = 42,
+    checkpoints_dir: Union[str, Path] = "checkpoints",
 ) -> Dict[str, Any]:
     """
     Load saved checkpoint and run inference over test split.
@@ -163,9 +181,9 @@ def run_model_inference(
       - 'disease_logits': (N, 12)
       - 'paths': list of image paths
     """
-    ckpt_path = CHECKPOINTS_DIR / f"{model_name}_seed42_best.pth"
-    if not ckpt_path.exists():
-        raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+    if checkpoint_path is None:
+        checkpoint_path = resolve_checkpoint_path(model_name, seed=seed, loss_version=loss_version, checkpoints_dir=checkpoints_dir)
+    ckpt_path = verify_path_exists(checkpoint_path, description=f"Checkpoint for '{model_name}'", loss_version=loss_version)
 
     # Build model architecture
     is_custom = "custom" in model_name
@@ -732,27 +750,73 @@ def _print_montage_summary(df: pd.DataFrame, png_path: Path) -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main() -> None:
-    set_seed(SEED)
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    MONTAGES_DIR.mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser(description="Multi-Crop Error Analysis")
+    parser.add_argument("--loss-version", type=str, choices=["v1", "v2"], default="v2", help="Loss version ({v1, v2}, default: v2)")
+    parser.add_argument("--seed", type=int, default=42, help="Seed (default: 42)")
+    parser.add_argument("--models", nargs="+", default=DEFAULT_MODELS, help="Models to analyze")
+    parser.add_argument("--checkpoints-dir", type=str, default="checkpoints", help="Checkpoints directory")
+    parser.add_argument("--results-dir", type=str, default="results", help="Results directory")
+    parser.add_argument("--reports-dir", type=str, default="reports", help="Reports directory")
+    parser.add_argument("--splits-dir", type=str, default=None, help="Splits directory")
+    parser.add_argument("--data-root", type=str, default=None, help="Data directory")
+    parser.add_argument("--device", type=str, default=None, help="Device ('cpu', 'mps', 'cuda')")
+    args = parser.parse_args()
 
-    device = get_device()
-    print(f"Using device: {device} | Splits dir: {SPLITS_DIR} | Data root: {DATA_ROOT}")
+    set_seed(args.seed)
+    results_dir = Path(args.results_dir)
+    reports_dir = Path(args.reports_dir)
+    montages_dir = reports_dir / "montages"
+    checkpoints_dir = Path(args.checkpoints_dir)
+    splits_dir = Path(args.splits_dir) if args.splits_dir else SPLITS_DIR
+    data_root = Path(args.data_root) if args.data_root else DATA_ROOT
 
-    test_df = pd.read_csv(SPLITS_DIR / "test.csv")
-    models = list(MODEL_JSON.keys())   # resnet18, mobilenetv3_small, custom_none, custom_se
+    results_dir.mkdir(parents=True, exist_ok=True)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    montages_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load canonical class names
-    with open(MODEL_JSON["resnet18"], "r", encoding="utf-8") as f:
+    device = get_device() if args.device is None else torch.device(args.device)
+
+    models = args.models
+    checkpoints_to_load = {
+        m: resolve_checkpoint_path(m, seed=args.seed, loss_version=args.loss_version, checkpoints_dir=checkpoints_dir)
+        for m in models
+    }
+    results_to_load = {
+        m: resolve_result_path(m, seed=args.seed, loss_version=args.loss_version, results_dir=results_dir)
+        for m in models
+    }
+
+    # Print exact paths and verify existence (exits with error if missing, no silent fallback)
+    print_and_verify_paths(
+        checkpoints=checkpoints_to_load,
+        results=results_to_load,
+        loss_version=args.loss_version,
+        header="ERROR ANALYSIS TARGET PATHS",
+    )
+
+    print(f"Using device: {device} | Splits dir: {splits_dir} | Data root: {data_root}")
+
+    test_df = pd.read_csv(splits_dir / "test.csv")
+
+    # Load canonical class names from first model's result JSON
+    with open(results_to_load[models[0]], "r", encoding="utf-8") as f:
         class_names: List[str] = json.load(f)["class_names"]
 
-    # ── Run fresh inference across all 4 models ──────────────────────────────
+    # ── Run fresh inference across all models ────────────────────────────────
     print("\nRunning inference for models to extract probabilities and dual-head predictions...")
     inference_results: Dict[str, Dict[str, Any]] = {}
     for m in models:
         print(f"  Inferencing {m} ...")
-        inference_results[m] = run_model_inference(m, test_df, device=device, batch_size=64)
+        inference_results[m] = run_model_inference(
+            m,
+            test_df,
+            device=device,
+            batch_size=64,
+            checkpoint_path=checkpoints_to_load[m],
+            loss_version=args.loss_version,
+            seed=args.seed,
+            checkpoints_dir=checkpoints_dir,
+        )
 
     # ── 1. 3x3 Crop Confusion Matrix & Cross-Crop Errors ─────────────────────
     crop_cms, df_cross_summary, df_cross_records = compute_crop_confusion_and_cross_crop_errors(
@@ -764,12 +828,23 @@ def main() -> None:
 
     # ── 2. Custom Models: Crop-Masked vs Flat Macro-F1 ────────────────────────
     custom_models = [m for m in models if "custom" in m]
-    # Also evaluate custom_cbam if checkpoint and result json exist
-    if (CHECKPOINTS_DIR / "custom_cbam_seed42_best.pth").exists():
-        if "custom_cbam" not in inference_results:
-            print("  Inferencing custom_cbam for crop-masked evaluation ...")
-            inference_results["custom_cbam"] = run_model_inference("custom_cbam", test_df, device=device, batch_size=64)
-            custom_models.append("custom_cbam")
+    # Also evaluate custom_cbam if checkpoint and result json exist for this loss version
+    cbam_ckpt = resolve_checkpoint_path("custom_cbam", seed=args.seed, loss_version=args.loss_version, checkpoints_dir=checkpoints_dir)
+    cbam_res = resolve_result_path("custom_cbam", seed=args.seed, loss_version=args.loss_version, results_dir=results_dir)
+    if "custom_cbam" not in models and cbam_ckpt.exists() and cbam_res.exists():
+        print("  Inferencing custom_cbam for crop-masked evaluation ...")
+        inference_results["custom_cbam"] = run_model_inference(
+            "custom_cbam",
+            test_df,
+            device=device,
+            batch_size=64,
+            checkpoint_path=cbam_ckpt,
+            loss_version=args.loss_version,
+            seed=args.seed,
+            checkpoints_dir=checkpoints_dir,
+        )
+        custom_models.append("custom_cbam")
+        results_to_load["custom_cbam"] = cbam_res
 
     df_masked = compute_crop_masked_evaluation(
         custom_models=custom_models,
@@ -786,16 +861,17 @@ def main() -> None:
     )
 
     # ── 4. Error Montage for custom_se ───────────────────────────────────────
-    montage_path, df_montage = generate_error_montage(
-        custom_se_result=inference_results["custom_se"],
-        test_df=test_df,
-        class_names=class_names,
-        n_top_confident=N_CONFIDENT_ERRORS,
-    )
-
-    # Also save confident_errors.csv for custom_se
-    conf_path = REPORTS_DIR / "confident_errors.csv"
-    df_montage[df_montage["in_top_confident"]].to_csv(conf_path, index=False)
+    if "custom_se" in inference_results:
+        montage_path, df_montage = generate_error_montage(
+            custom_se_result=inference_results["custom_se"],
+            test_df=test_df,
+            class_names=class_names,
+            n_top_confident=N_CONFIDENT_ERRORS,
+        )
+        # Also save confident_errors.csv for custom_se
+        conf_path = reports_dir / "confident_errors.csv"
+        df_montage[df_montage["in_top_confident"]].to_csv(conf_path, index=False)
+        _print_montage_summary(df_montage, montage_path)
 
     # ── Existing metrics: Bootstrap CIs, Confusion Pairs, Per-Crop F1 ─────────
     all_per_class: List[pd.DataFrame] = []
@@ -803,7 +879,13 @@ def main() -> None:
     all_per_crop: List[pd.DataFrame] = []
 
     for m in models:
-        y_true, y_pred, group_ids, _ = load_predictions(m)
+        y_true, y_pred, group_ids, _ = load_predictions(
+            m,
+            result_path=results_to_load[m],
+            loss_version=args.loss_version,
+            seed=args.seed,
+            results_dir=results_dir,
+        )
         all_per_class.append(compute_per_class_metrics_with_ci(y_true, y_pred, group_ids, class_names, m))
         all_conf_pairs.append(compute_top_confusion_pairs(y_true, y_pred, class_names, m))
         all_per_crop.append(compute_per_crop_f1(y_true, y_pred, m))
@@ -812,15 +894,14 @@ def main() -> None:
     df_conf_pairs_all = pd.concat(all_conf_pairs, ignore_index=True)
     df_per_crop_all = pd.concat(all_per_crop, ignore_index=True)
 
-    df_per_class_all.to_csv(RESULTS_DIR / "error_analysis_per_class.csv", index=False)
-    df_conf_pairs_all.to_csv(RESULTS_DIR / "error_analysis_confusion_pairs.csv", index=False)
-    df_per_crop_all.to_csv(RESULTS_DIR / "error_analysis_per_crop_f1.csv", index=False)
+    df_per_class_all.to_csv(results_dir / "error_analysis_per_class.csv", index=False)
+    df_conf_pairs_all.to_csv(results_dir / "error_analysis_confusion_pairs.csv", index=False)
+    df_per_crop_all.to_csv(results_dir / "error_analysis_per_crop_f1.csv", index=False)
 
     # ── PRINT ALL REQUIRED TABLES ─────────────────────────────────────────────
     _print_crop_confusion_matrices(crop_cms, df_cross_summary)
     _print_crop_masked_results(df_masked)
     _print_group_level_errors(df_group_errors)
-    _print_montage_summary(df_montage, montage_path)
 
     # Per-crop macro-F1 summary
     _banner("Per-Crop Macro-F1 Summary")

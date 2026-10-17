@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 from src.utils.config import load_config
 from src.utils.device import get_device
+from src.utils.paths import resolve_checkpoint_path, print_and_verify_paths
 from src.data.dataset import get_transforms
 from src.models.backbones import create_model
 from src.xai.gradcam import GradCAM
@@ -22,7 +23,11 @@ from src.xai.quantitative import compute_xai_metrics, aggregate_xai_metrics, seg
 def main():
     parser = argparse.ArgumentParser(description="Generate Grad-CAM heatmaps and quantitative XAI metrics.")
     parser.add_argument("--config", type=str, default="configs/config.yaml", help="Path to config file")
-    parser.add_argument("--checkpoint", type=str, default="models/best_model.pth", help="Path to model checkpoint")
+    parser.add_argument("--checkpoint", type=str, default=None, help="Path to model checkpoint. If omitted, resolved via --model/--seed/--loss-version.")
+    parser.add_argument("--model", type=str, default="resnet18", help="Model name for automatic checkpoint resolution (used when --checkpoint is not given).")
+    parser.add_argument("--seed", type=int, default=42, help="Seed used during training, for checkpoint name resolution (default: 42).")
+    parser.add_argument("--loss-version", choices=["v1", "v2"], default="v2", help="Loss version used for training (default: v2). Determines checkpoint name suffix.")
+    parser.add_argument("--checkpoints-dir", type=str, default="checkpoints", help="Directory containing checkpoints (default: checkpoints).")
     parser.add_argument("--samples-per-class", type=int, default=2, help="Number of test images to explain per class")
     parser.add_argument("--use-plusplus", action="store_true", help="Use Grad-CAM++ instead of vanilla Grad-CAM")
     parser.add_argument("--output-dir", type=str, default="results/xai", help="Directory to save XAI figures")
@@ -34,9 +39,24 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    ckpt_path = Path(args.checkpoint)
-    if not ckpt_path.exists():
-        raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+    if args.checkpoint:
+        ckpt_path = Path(args.checkpoint)
+    else:
+        ckpt_path = resolve_checkpoint_path(
+            args.model,
+            seed=args.seed,
+            loss_version=args.loss_version,
+            checkpoints_dir=Path(args.checkpoints_dir),
+        )
+
+    # Print resolved paths and exit with error if missing (no silent fallback)
+    print_and_verify_paths(
+        checkpoints={args.model: ckpt_path},
+        results={},
+        loss_version=args.loss_version,
+        header="XAI GENERATION",
+    )
+
 
     device = get_device(args.device)
     print(f"[Device] Using compute device: {device}")

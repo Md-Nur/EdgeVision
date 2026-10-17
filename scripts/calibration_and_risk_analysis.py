@@ -19,12 +19,15 @@ Tasks:
      with group-bootstrap 95% CIs.
 """
 
+import argparse
 import json
 import os
 import random
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -43,8 +46,15 @@ from src.data.dataset import CropDiseaseDataset, get_transforms
 from src.losses.focal_loss import compute_class_weights
 from src.models.backbones import create_model
 from src.models.custom_net import build_custom_net
+from src.utils.paths import (
+    resolve_checkpoint_path,
+    resolve_result_path,
+    print_and_verify_paths,
+    verify_path_exists,
+)
 
 SEED = 42
+
 N_BOOTSTRAP = 2000
 ALPHA = 0.05
 CHECKPOINTS_DIR = Path("checkpoints")
@@ -73,11 +83,20 @@ def get_device() -> torch.device:
 
 
 @torch.no_grad()
-def extract_logits(model_name: str, split_df: pd.DataFrame, split_name: str, device: torch.device) -> Dict[str, Any]:
+def extract_logits(
+    model_name: str,
+    split_df: pd.DataFrame,
+    split_name: str,
+    device: torch.device,
+    checkpoint_path: Optional[Union[str, Path]] = None,
+    loss_version: str = "v2",
+    seed: int = 42,
+    checkpoints_dir: Union[str, Path] = "checkpoints",
+) -> Dict[str, Any]:
     """Run inference to extract unnormalized logits, labels, and group_ids."""
-    ckpt_path = CHECKPOINTS_DIR / f"{model_name}_seed42_best.pth"
-    if not ckpt_path.exists():
-        raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+    if checkpoint_path is None:
+        checkpoint_path = resolve_checkpoint_path(model_name, seed=seed, loss_version=loss_version, checkpoints_dir=checkpoints_dir)
+    ckpt_path = verify_path_exists(checkpoint_path, description=f"Checkpoint for '{model_name}'", loss_version=loss_version)
 
     is_custom = "custom" in model_name
     if is_custom:
@@ -256,19 +275,48 @@ def compute_group_bootstrap_metric(
 
 
 def main():
-    set_seed(SEED)
-    device = get_device()
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser(description="Calibration and Risk Analysis")
+    parser.add_argument("--loss-version", type=str, choices=["v1", "v2"], default="v2", help="Loss version ({v1, v2}, default: v2)")
+    parser.add_argument("--seed", type=int, default=42, help="Seed (default: 42)")
+    parser.add_argument("--models", nargs="+", default=MODELS, help="Models to analyze")
+    parser.add_argument("--checkpoints-dir", type=str, default="checkpoints", help="Checkpoints directory")
+    parser.add_argument("--results-dir", type=str, default="results", help="Results directory")
+    parser.add_argument("--reports-dir", type=str, default="reports", help="Reports directory")
+    parser.add_argument("--splits-dir", type=str, default="splits/dedup", help="Splits directory")
+    parser.add_argument("--device", type=str, default=None, help="Device ('cpu', 'mps', 'cuda')")
+    args = parser.parse_args()
+
+    set_seed(args.seed)
+    device = get_device() if args.device is None else torch.device(args.device)
+    reports_dir = Path(args.reports_dir)
+    results_dir = Path(args.results_dir)
+    checkpoints_dir = Path(args.checkpoints_dir)
+    splits_dir = Path(args.splits_dir)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    models = args.models
+    checkpoints_to_load = {
+        m: resolve_checkpoint_path(m, seed=args.seed, loss_version=args.loss_version, checkpoints_dir=checkpoints_dir)
+        for m in models
+    }
+    result_json_to_load = resolve_result_path(models[0], seed=args.seed, loss_version=args.loss_version, results_dir=results_dir)
+
+    print_and_verify_paths(
+        checkpoints=checkpoints_to_load,
+        results={f"{models[0]}_result": result_json_to_load},
+        loss_version=args.loss_version,
+        header="CALIBRATION & RISK ANALYSIS TARGET PATHS",
+    )
 
     print(f"Device: {device}")
 
     # Load splits
-    val_df = pd.read_csv(SPLITS_DIR / "val.csv")
-    test_df = pd.read_csv(SPLITS_DIR / "test.csv")
-    train_df = pd.read_csv(SPLITS_DIR / "train.csv")
+    val_df = pd.read_csv(splits_dir / "val.csv")
+    test_df = pd.read_csv(splits_dir / "test.csv")
+    train_df = pd.read_csv(splits_dir / "train.csv")
 
-    with open("results/resnet18_seed42.json") as f:
+    with open(result_json_to_load, "r", encoding="utf-8") as f:
         class_names = json.load(f)["class_names"]
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -279,7 +327,8 @@ def main():
     print("=" * 90)
 
     class_weights = compute_class_weights(train_df, num_classes=12, method="inverse")
-    print("\n[Exact Loss Specification]:")
+    print(f"\n[Exact Loss Specification (loss_version={args.loss_version})]:")
+    print(f"  - Loss Version       : {args.loss_version}")
     print("  - Loss Family        : Cross-Entropy (Weighted)")
     print("  - Focal Loss Flag    : False (use_focal=False in get_loss_function)")
     print("  - Label Smoothing    : 0.10 (applied across all models)")
@@ -296,11 +345,29 @@ def main():
     val_outputs = {}
     test_outputs = {}
 
-    for m in MODELS:
+    for m in models:
         print(f"  Evaluating {m} on VAL ...")
-        val_outputs[m] = extract_logits(m, val_df, "val", device)
+        val_outputs[m] = extract_logits(
+            m,
+            val_df,
+            "val",
+            device,
+            checkpoint_path=checkpoints_to_load[m],
+            loss_version=args.loss_version,
+            seed=args.seed,
+            checkpoints_dir=checkpoints_dir,
+        )
         print(f"  Evaluating {m} on TEST ...")
-        test_outputs[m] = extract_logits(m, test_df, "test", device)
+        test_outputs[m] = extract_logits(
+            m,
+            test_df,
+            "test",
+            device,
+            checkpoint_path=checkpoints_to_load[m],
+            loss_version=args.loss_version,
+            seed=args.seed,
+            checkpoints_dir=checkpoints_dir,
+        )
 
     # Max-softmax summary table
     conf_summary_rows = []
@@ -356,14 +423,14 @@ def main():
         ax.grid(True, linestyle=":", alpha=0.6)
         ax.legend(loc="upper left", framealpha=0.9)
         fig.tight_layout()
-        hist_path = REPORTS_DIR / f"confidence_hist_{m}.png"
+        hist_path = reports_dir / f"confidence_hist_{m}.png"
         fig.savefig(hist_path)
         plt.close(fig)
 
     df_conf_summary = pd.DataFrame(conf_summary_rows)
     print("\n[Confidence Summary Table]:")
     print(df_conf_summary.to_string(index=False))
-    df_conf_summary.to_csv(RESULTS_DIR / "confidence_summary_val_test.csv", index=False)
+    df_conf_summary.to_csv(results_dir / "confidence_summary_val_test.csv", index=False)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Requirement 2: ECE (15 bins), Reliability Diagrams & Temperature Scaling
@@ -376,7 +443,7 @@ def main():
     temperatures = {}
     scaled_test_probs = {}
 
-    for m in MODELS:
+    for m in models:
         val_logits = val_outputs[m]["logits"]
         val_labels = val_outputs[m]["labels"]
         test_logits = test_outputs[m]["logits"]
@@ -438,14 +505,14 @@ def main():
             ax.legend(loc="upper left")
 
         fig.tight_layout()
-        rel_path = REPORTS_DIR / f"reliability_{m}.png"
+        rel_path = reports_dir / f"reliability_{m}.png"
         fig.savefig(rel_path)
         plt.close(fig)
 
     df_calib = pd.DataFrame(calib_rows)
     print("\n[Calibration & Temperature Scaling Results (Dedup TEST Split)]:")
     print(df_calib.to_string(index=False))
-    df_calib.to_csv(RESULTS_DIR / "calibration_temperature_scaling.csv", index=False)
+    df_calib.to_csv(results_dir / "calibration_temperature_scaling.csv", index=False)
 
     # ─────────────────────────────────────────────────────────────────────────
     # Requirement 3: Risk-Coverage Curves at EQUAL Coverage (100%, 90%, 80%, 70%, 60%)
@@ -461,7 +528,7 @@ def main():
     equal_cov_overall_rows = []
     equal_cov_per_class_rows = []
 
-    for m in MODELS:
+    for m in models:
         probs = scaled_test_probs[m]
         confs = probs.max(axis=1)
         preds = probs.argmax(axis=1)
@@ -512,14 +579,14 @@ def main():
     df_equal_overall = pd.DataFrame(equal_cov_overall_rows)
     print("\n[Equal Coverage Overall Performance (Temperature-Scaled)]:")
     print(df_equal_overall.to_string(index=False))
-    df_equal_overall.to_csv(RESULTS_DIR / "risk_coverage_equal_coverage_overall.csv", index=False)
+    df_equal_overall.to_csv(results_dir / "risk_coverage_equal_coverage_overall.csv", index=False)
 
     df_equal_per_class = pd.DataFrame(equal_cov_per_class_rows)
-    df_equal_per_class.to_csv(RESULTS_DIR / "risk_coverage_equal_coverage_per_class.csv", index=False)
+    df_equal_per_class.to_csv(results_dir / "risk_coverage_equal_coverage_per_class.csv", index=False)
 
     # Pivot table of per-class retention fraction per model
     print("\n[Per-Class Retained Fraction (%) Across Coverage Levels]:")
-    for m in MODELS:
+    for m in models:
         print(f"\n--- Model: {m} ---")
         m_df = df_equal_per_class[df_equal_per_class["model"] == m]
         piv = m_df.pivot(index="class_name", columns="target_coverage", values="retained_fraction_%")[
@@ -544,7 +611,7 @@ def main():
 
     papaya_split_rows = []
 
-    for m in MODELS:
+    for m in models:
         preds_all = test_outputs[m]["preds"]
 
         for cname in papaya_classes:
@@ -589,7 +656,7 @@ def main():
     df_papaya_split = pd.DataFrame(papaya_split_rows)
     print("\n[Papaya Performance Split by Border Brightness (Group-Bootstrap 95% CI)]:")
     print(df_papaya_split.to_string(index=False))
-    df_papaya_split.to_csv(RESULTS_DIR / "papaya_border_brightness_split_metrics.csv", index=False)
+    df_papaya_split.to_csv(results_dir / "papaya_border_brightness_split_metrics.csv", index=False)
 
     print("\n" + "=" * 90)
     print("ALL 4 REQUIREMENTS EVALUATED AND OUTPUTTED SUCCESSFULLY.")
