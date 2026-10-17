@@ -1,0 +1,5 @@
+model,fitted_temperature_T,test_ece_before,test_ece_after,ece_reduction_%,test_nll_before,test_nll_after,nll_change
+resnet18,0.3835,0.289,0.0094,96.75,0.4849,0.1905,-0.2944
+mobilenetv3_small,0.4604,0.273,0.012,95.59,0.5261,0.3119,-0.2142
+custom_none,0.4311,0.252,0.0264,89.51,0.5551,0.3511,-0.204
+custom_se,0.511,0.2324,0.026,88.82,0.5956,0.4556,-0.14

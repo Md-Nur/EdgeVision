@@ -1,0 +1,5 @@
+class_name,n_images,mean_brightness,std_brightness,median,min,max,pct_gt_230,z_score_vs_overall,flag
+Papaya___Anthracnose,186,198.39,41.41,206.17,64.85,250.19,24.7,-0.73,LOW_BRIGHTNESS (Darker/field background)
+Papaya___Healthy,347,216.9,39.06,230.42,42.91,254.71,51.3,-0.23,Normal
+Papaya___Leaf_Curl,563,238.53,24.57,248.2,77.54,255.0,78.9,0.35,HIGH_BRIGHTNESS (White background shortcut)
+Papaya___Ringspot,390,227.6,40.46,244.96,43.4,255.0,70.3,0.05,Normal
